@@ -10,7 +10,7 @@
 namespace eZ\Publish\Core\Limitation;
 
 use eZ\Publish\API\Repository\Values\ValueObject;
-use eZ\Publish\API\Repository\Values\User\User as APIUser;
+use eZ\Publish\API\Repository\Values\User\UserRef as APIUserRef;
 use eZ\Publish\API\Repository\Values\Content\Content;
 use eZ\Publish\API\Repository\Values\Content\VersionInfo;
 use eZ\Publish\Core\Base\Exceptions\InvalidArgumentException;
@@ -112,13 +112,13 @@ class StatusLimitationType implements SPILimitationTypeInterface
      *         Example if OwnerLimitationValue->limitationValues[0] is not one of: [ 1,  2 ]
      *
      * @param \eZ\Publish\API\Repository\Values\User\Limitation $value
-     * @param \eZ\Publish\API\Repository\Values\User\User $currentUser
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $currentUser
      * @param \eZ\Publish\API\Repository\Values\ValueObject $object
      * @param \eZ\Publish\API\Repository\Values\ValueObject[]|null $targets The context of the $object, like Location of Content, if null none where provided by caller
      *
      * @return boolean
      */
-    public function evaluate( APILimitationValue $value, APIUser $currentUser, ValueObject $object, array $targets = null )
+    public function evaluate( APILimitationValue $value, APIUserRef $currentUser, ValueObject $object, array $targets = null )
     {
         if ( !$value instanceof APIStatusLimitation )
         {
@@ -155,11 +155,11 @@ class StatusLimitationType implements SPILimitationTypeInterface
      *         being used as a Criterion.
      *
      * @param \eZ\Publish\API\Repository\Values\User\Limitation $value
-     * @param \eZ\Publish\API\Repository\Values\User\User $currentUser
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $currentUser
      *
      * @return \eZ\Publish\API\Repository\Values\Content\Query\CriterionInterface
      */
-    public function getCriterion( APILimitationValue $value, APIUser $currentUser )
+    public function getCriterion( APILimitationValue $value, APIUserRef $currentUser )
     {
         throw new NotImplementedException( "Status Limitation Criterion" );
     }

@@ -9,7 +9,7 @@
 
 namespace eZ\Publish\Core\REST\Client;
 
-use eZ\Publish\API\Repository\Values\User\User;
+use eZ\Publish\API\Repository\Values\User\UserRef;
 
 use eZ\Publish\Core\REST\Common\RequestParser;
 use eZ\Publish\Core\REST\Common\Input\Dispatcher;
@@ -94,13 +94,13 @@ class IntegrationTestRepository extends Repository implements Sessionable
     /**
      * Sets the current user to the given $user.
      *
-     * @param \eZ\Publish\API\Repository\Values\User\User $user
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $user
      *
      * @return void
      */
-    public function setCurrentUser( User $user )
+    public function setCurrentUser( UserRef $user )
     {
         $this->currentUser = $user;
-        $this->authenticator->setUserId( $user->id );
+        $this->authenticator->setUserId( $user->getUserId() );
     }
 }

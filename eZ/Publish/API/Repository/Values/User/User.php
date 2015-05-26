@@ -21,7 +21,7 @@ use eZ\Publish\API\Repository\Values\Content\Content;
  * @property-read boolean $enabled User can not login if false
  * @property-read int $maxLogin Max number of time user is allowed to login
  */
-abstract class User extends Content
+abstract class User extends Content implements UserRef
 {
     /**
      * User login
@@ -69,4 +69,14 @@ abstract class User extends Content
      * @var int
      */
     protected $maxLogin;
+
+    /**
+     * The User id of the User
+     *
+     * @return mixed
+     */
+    public function getUserId()
+    {
+        return $this->id;
+    }
 }

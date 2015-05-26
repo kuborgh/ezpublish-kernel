@@ -11,7 +11,7 @@
 namespace eZ\Publish\API\Repository;
 
 use eZ\Publish\API\Repository\Values\ValueObject;
-use eZ\Publish\API\Repository\Values\User\User;
+use eZ\Publish\API\Repository\Values\User\UserRef;
 
 /**
  * Repository interface
@@ -29,20 +29,20 @@ interface Repository
     /**
      * Sets the current user to the given $user.
      *
-     * @param \eZ\Publish\API\Repository\Values\User\User $user
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $user
      *
      * @return void
      */
-    public function setCurrentUser( User $user );
+    public function setCurrentUser( UserRef $user );
 
     /**
      * @param string $module The module, aka controller identifier to check permissions on
      * @param string $function The function, aka the controller action to check permissions on
-     * @param \eZ\Publish\API\Repository\Values\User\User $user
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $user
      *
      * @return boolean|array if limitations are on this function an array of limitations is returned
      */
-    public function hasAccess( $module, $function, User $user = null );
+    public function hasAccess( $module, $function, UserRef $user = null );
 
     /**
      * Indicates if the current user is allowed to perform an action given by the function on the given

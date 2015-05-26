@@ -11,7 +11,7 @@ namespace eZ\Publish\Core\REST\Client;
 
 use eZ\Publish\API\Repository\Repository as APIRepository;
 use eZ\Publish\API\Repository\Values\ValueObject;
-use eZ\Publish\API\Repository\Values\User\User;
+use eZ\Publish\API\Repository\Values\User\UserRef;
 
 use eZ\Publish\Core\REST\Common;
 
@@ -142,11 +142,11 @@ class Repository implements APIRepository
     /**
      * Sets the current user to the given $user.
      *
-     * @param \eZ\Publish\API\Repository\Values\User\User $user
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $user
      *
      * @return void
      */
-    public function setCurrentUser( User $user )
+    public function setCurrentUser( UserRef $user )
     {
         throw new Exceptions\MethodNotAllowedException(
             'It is not allowed to set a current user in this implementation. Please use a corresponding authenticating HttpClient instead.'

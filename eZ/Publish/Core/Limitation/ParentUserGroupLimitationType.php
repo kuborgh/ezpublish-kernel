@@ -10,7 +10,7 @@
 namespace eZ\Publish\Core\Limitation;
 
 use eZ\Publish\API\Repository\Values\ValueObject;
-use eZ\Publish\API\Repository\Values\User\User as APIUser;
+use eZ\Publish\API\Repository\Values\User\UserRef as APIUserRef;
 use eZ\Publish\API\Repository\Values\Content\Location;
 use eZ\Publish\API\Repository\Values\Content\LocationCreateStruct;
 use eZ\Publish\Core\Base\Exceptions\BadStateException;
@@ -116,13 +116,13 @@ class ParentUserGroupLimitationType extends AbstractPersistenceLimitationType im
      *         Example if OwnerLimitationValue->limitationValues[0] is not one of: [ 1,  2 ]
      *
      * @param \eZ\Publish\API\Repository\Values\User\Limitation $value
-     * @param \eZ\Publish\API\Repository\Values\User\User $currentUser
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $currentUser
      * @param \eZ\Publish\API\Repository\Values\ValueObject $object
      * @param \eZ\Publish\API\Repository\Values\ValueObject[]|null $targets The context of the $object, like Location of Content, if null none where provided by caller
      *
      * @return boolean
      */
-    public function evaluate( APILimitationValue $value, APIUser $currentUser, ValueObject $object, array $targets = null )
+    public function evaluate( APILimitationValue $value, APIUserRef $currentUser, ValueObject $object, array $targets = null )
     {
         if ( !$value instanceof APIParentUserGroupLimitation )
             throw new InvalidArgumentException( '$value', 'Must be of type: APIParentUserGroupLimitation' );
@@ -142,7 +142,7 @@ class ParentUserGroupLimitationType extends AbstractPersistenceLimitationType im
         }
 
         $locationHandler = $this->persistence->locationHandler();
-        $currentUserLocations = $locationHandler->loadLocationsByContent( $currentUser->id );
+        $currentUserLocations = $locationHandler->loadLocationsByContent( $currentUser->getUserId() );
         if ( empty( $currentUserLocations ) )
         {
             return false;
@@ -174,7 +174,7 @@ class ParentUserGroupLimitationType extends AbstractPersistenceLimitationType im
                 );
             }
 
-            if ( $parentOwnerId === $currentUser->id )
+            if ( $parentOwnerId === $currentUser->getUserId() )
             {
                 continue;
             }
@@ -210,11 +210,11 @@ class ParentUserGroupLimitationType extends AbstractPersistenceLimitationType im
      * Returns Criterion for use in find() query
      *
      * @param \eZ\Publish\API\Repository\Values\User\Limitation $value
-     * @param \eZ\Publish\API\Repository\Values\User\User $currentUser
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $currentUser
      *
      * @return \eZ\Publish\API\Repository\Values\Content\Query\CriterionInterface
      */
-    public function getCriterion( APILimitationValue $value, APIUser $currentUser )
+    public function getCriterion( APILimitationValue $value, APIUserRef $currentUser )
     {
         throw new \eZ\Publish\API\Repository\Exceptions\NotImplementedException( __METHOD__ );
     }

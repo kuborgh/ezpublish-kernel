@@ -9,7 +9,7 @@
 
 namespace eZ\Publish\Core\MVC\Symfony\Security;
 
-use eZ\Publish\API\Repository\Values\User\User as APIUser;
+use eZ\Publish\API\Repository\Values\User\UserRef as APIUserRef;
 use Symfony\Component\Security\Core\User\UserInterface as BaseUserInterface;
 use Symfony\Component\Security\Core\User\EquatableInterface;
 
@@ -25,7 +25,7 @@ class User implements UserInterface, EquatableInterface
      */
     private $roles;
 
-    public function __construct( APIUser $user = null, array $roles = array() )
+    public function __construct( APIUserRef $user = null, array $roles = array() )
     {
         $this->user = $user;
         $this->roles = $roles;
@@ -100,7 +100,7 @@ class User implements UserInterface, EquatableInterface
     }
 
     /**
-     * @return \eZ\Publish\API\Repository\Values\User\User
+     * @return \eZ\Publish\API\Repository\Values\User\UserRef
      */
     public function getAPIUser()
     {
@@ -108,18 +108,18 @@ class User implements UserInterface, EquatableInterface
     }
 
     /**
-     * @param \eZ\Publish\API\Repository\Values\User\User $user
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $user
      */
-    public function setAPIUser( APIUser $user )
+    public function setAPIUser( APIUserRef $user )
     {
         $this->user = $user;
     }
 
     public function isEqualTo( BaseUserInterface $user )
     {
-        if ( $user instanceof User && $this->user instanceof APIUser )
+        if ( $user instanceof User && $this->user instanceof APIUserRef )
         {
-            return $user->getAPIUser()->id === $this->user->id;
+            return $user->getAPIUser()->getUserId() === $this->user->getUserId();
         }
 
         return false;

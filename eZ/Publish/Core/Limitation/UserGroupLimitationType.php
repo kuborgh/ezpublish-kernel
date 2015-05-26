@@ -10,7 +10,7 @@
 namespace eZ\Publish\Core\Limitation;
 
 use eZ\Publish\API\Repository\Values\ValueObject;
-use eZ\Publish\API\Repository\Values\User\User as APIUser;
+use eZ\Publish\API\Repository\Values\User\UserRef as APIUserRef;
 use eZ\Publish\API\Repository\Values\Content\Content;
 use eZ\Publish\API\Repository\Values\Content\ContentInfo;
 use eZ\Publish\API\Repository\Values\Content\ContentCreateStruct;
@@ -118,13 +118,13 @@ class UserGroupLimitationType extends AbstractPersistenceLimitationType implemen
      *         Example if OwnerLimitationValue->limitationValues[0] is not one of: [ 1 ]
      *
      * @param \eZ\Publish\API\Repository\Values\User\Limitation $value
-     * @param \eZ\Publish\API\Repository\Values\User\User $currentUser
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $currentUser
      * @param \eZ\Publish\API\Repository\Values\ValueObject $object
      * @param \eZ\Publish\API\Repository\Values\ValueObject[]|null $targets The context of the $object, like Location of Content, if null none where provided by caller
      *
      * @return boolean
      */
-    public function evaluate( APILimitationValue $value, APIUser $currentUser, ValueObject $object, array $targets = null )
+    public function evaluate( APILimitationValue $value, APIUserRef $currentUser, ValueObject $object, array $targets = null )
     {
         if ( !$value instanceof APIUserGroupLimitation )
         {
@@ -158,7 +158,7 @@ class UserGroupLimitationType extends AbstractPersistenceLimitationType implemen
          /**
           * @var $object ContentInfo|ContentCreateStruct
           */
-        if ( $object->ownerId === $currentUser->id )
+        if ( $object->ownerId === $currentUser->getUserId() )
             return true;
 
         /**
@@ -169,7 +169,7 @@ class UserGroupLimitationType extends AbstractPersistenceLimitationType implemen
         if ( empty( $ownerLocations ) )
             return false;
 
-        $currentUserLocations = $locationHandler->loadLocationsByContent( $currentUser->id );
+        $currentUserLocations = $locationHandler->loadLocationsByContent( $currentUser->getUserId() );
         if ( empty( $currentUserLocations ) )
             return false;
 
@@ -190,11 +190,11 @@ class UserGroupLimitationType extends AbstractPersistenceLimitationType implemen
      * Returns Criterion for use in find() query
      *
      * @param \eZ\Publish\API\Repository\Values\User\Limitation $value
-     * @param \eZ\Publish\API\Repository\Values\User\User $currentUser
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $currentUser
      *
      * @return \eZ\Publish\API\Repository\Values\Content\Query\CriterionInterface
      */
-    public function getCriterion( APILimitationValue $value, APIUser $currentUser )
+    public function getCriterion( APILimitationValue $value, APIUserRef $currentUser )
     {
         if ( empty( $value->limitationValues )  )// no limitation values
             throw new \RuntimeException( "\$value->limitationValues is empty, it should not have been stored in the first place" );
@@ -208,7 +208,7 @@ class UserGroupLimitationType extends AbstractPersistenceLimitationType implemen
         }
 
         $groupIds = array();
-        $currentUserLocations = $this->persistence->locationHandler()->loadLocationsByContent( $currentUser->id );
+        $currentUserLocations = $this->persistence->locationHandler()->loadLocationsByContent( $currentUser->getUserId() );
         if ( !empty( $currentUserLocations ) )
         {
             foreach ( $currentUserLocations as $currentUserLocation )

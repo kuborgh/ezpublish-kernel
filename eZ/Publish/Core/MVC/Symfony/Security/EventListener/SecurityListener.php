@@ -16,10 +16,11 @@ use eZ\Publish\Core\MVC\Symfony\Security\Authorization\Attribute;
 use eZ\Publish\Core\MVC\Symfony\Security\Exception\UnauthorizedSiteAccessException;
 use eZ\Publish\Core\MVC\Symfony\Security\InteractiveLoginToken;
 use eZ\Publish\Core\MVC\Symfony\Security\UserInterface as eZUser;
-use eZ\Publish\API\Repository\Values\User\User as APIUser;
+use eZ\Publish\API\Repository\Values\User\UserRef as APIUserRef;
 use eZ\Publish\Core\MVC\Symfony\Event\InteractiveLoginEvent;
 use eZ\Publish\Core\MVC\Symfony\Security\UserWrapped;
 use eZ\Publish\Core\MVC\Symfony\SiteAccess;
+use eZ\Publish\Core\Repository\Values\User\UserRef;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -128,9 +129,7 @@ class SecurityListener implements EventSubscriberInterface
         }
         else
         {
-            $apiUser = $this->repository->getUserService()->loadUser(
-                $this->configResolver->getParameter( "anonymous_user_id" )
-            );
+            $apiUser = new UserRef( $this->configResolver->getParameter( "anonymous_user_id" ) );
         }
 
         $this->repository->setCurrentUser( $apiUser );
@@ -152,11 +151,11 @@ class SecurityListener implements EventSubscriberInterface
      * One may want to override this method to use their own user class.
      *
      * @param \Symfony\Component\Security\Core\User\UserInterface $originalUser
-     * @param \eZ\Publish\API\Repository\Values\User\User $apiUser
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $apiUser
      *
      * @return \eZ\Publish\Core\MVC\Symfony\Security\UserInterface
      */
-    protected function getUser( UserInterface $originalUser, APIUser $apiUser )
+    protected function getUser( UserInterface $originalUser, APIUserRef $apiUser )
     {
         return new UserWrapped( $originalUser, $apiUser );
     }

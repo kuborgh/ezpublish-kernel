@@ -9,7 +9,7 @@
 
 namespace eZ\Publish\Core\MVC\Symfony\Security;
 
-use eZ\Publish\API\Repository\Values\User\User as APIUser;
+use eZ\Publish\API\Repository\Values\User\UserRef as APIUserRef;
 use Symfony\Component\Security\Core\User\AdvancedUserInterface;
 use Symfony\Component\Security\Core\User\EquatableInterface;
 use Symfony\Component\Security\Core\User\UserInterface as CoreUserInterface;
@@ -31,11 +31,11 @@ class UserWrapped implements UserInterface, EquatableInterface
     private $wrappedUser;
 
     /**
-     * @var \eZ\Publish\API\Repository\Values\User\User
+     * @var \eZ\Publish\API\Repository\Values\User\UserRef
      */
     private $apiUser;
 
-    public function __construct( CoreUserInterface $wrappedUser, APIUser $apiUser )
+    public function __construct( CoreUserInterface $wrappedUser, APIUserRef $apiUser )
     {
         $this->wrappedUser = $wrappedUser;
         $this->apiUser = $apiUser;
@@ -67,15 +67,15 @@ class UserWrapped implements UserInterface, EquatableInterface
     }
 
     /**
-     * @param \eZ\Publish\API\Repository\Values\User\User $apiUser
+     * @param \eZ\Publish\API\Repository\Values\User\UserRef $apiUser
      */
-    public function setAPIUser( APIUser $apiUser )
+    public function setAPIUser( APIUserRef $apiUser )
     {
         $this->apiUser = $apiUser;
     }
 
     /**
-     * @return \eZ\Publish\API\Repository\Values\User\User
+     * @return \eZ\Publish\API\Repository\Values\User\UserRef
      */
     public function getAPIUser()
     {

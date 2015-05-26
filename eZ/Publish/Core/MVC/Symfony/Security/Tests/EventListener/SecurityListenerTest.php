@@ -12,6 +12,7 @@ namespace eZ\Publish\Core\MVC\Symfony\Security\Tests\EventListener;
 use eZ\Publish\Core\MVC\Symfony\Security\Authorization\Attribute;
 use eZ\Publish\Core\MVC\Symfony\Security\EventListener\SecurityListener;
 use eZ\Publish\Core\MVC\Symfony\SiteAccess;
+use eZ\Publish\Core\Repository\Values\User\UserRef;
 use PHPUnit_Framework_TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
@@ -141,18 +142,7 @@ class SecurityListenerTest extends PHPUnit_Framework_TestCase
             ->with( 'anonymous_user_id' )
             ->will( $this->returnValue( $anonymousUserId ) );
 
-        $apiUser = $this->getMock( 'eZ\Publish\API\Repository\Values\User\User' );
-        $userService = $this->getMock( 'eZ\Publish\API\Repository\UserService' );
-        $userService
-            ->expects( $this->once() )
-            ->method( 'loadUser' )
-            ->with( $anonymousUserId )
-            ->will( $this->returnValue( $apiUser ) );
-
-        $this->repository
-            ->expects( $this->once() )
-            ->method( 'getUserService' )
-            ->will( $this->returnValue( $userService ) );
+        $apiUser = new UserRef( $anonymousUserId );
         $this->repository
             ->expects( $this->once() )
             ->method( 'setCurrentUser' )
