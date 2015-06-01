@@ -41,34 +41,34 @@ class Type extends FieldType
     );
 
     /**
-     * @var \eZ\Publish\Core\FieldType\RichText\ConverterDispatcher
-     */
-    protected $inputConverterDispatcher;
-
-    /**
-     * @var \eZ\Publish\Core\FieldType\RichText\ValidatorDispatcher
-     */
-    protected $inputValidatorDispatcher;
-
-    /**
      * @var \eZ\Publish\Core\FieldType\RichText\ValidatorDispatcher
      */
     protected $internalFormatValidator;
 
     /**
-     * @param \eZ\Publish\Core\FieldType\RichText\ConverterDispatcher $inputConverterDispatcher
-     * @param \eZ\Publish\Core\FieldType\RichText\ValidatorDispatcher $inputValidatorDispatcher
+     * @var \eZ\Publish\Core\FieldType\RichText\ConverterDispatcher
+     */
+    protected $inputConverterDispatcher;
+
+    /**
+     * @var null|\eZ\Publish\Core\FieldType\RichText\ValidatorDispatcher
+     */
+    protected $inputValidatorDispatcher;
+
+    /**
      * @param \eZ\Publish\Core\FieldType\RichText\Validator $internalFormatValidator
+     * @param \eZ\Publish\Core\FieldType\RichText\ConverterDispatcher $inputConverterDispatcher
+     * @param null|\eZ\Publish\Core\FieldType\RichText\ValidatorDispatcher $inputValidatorDispatcher
      */
     public function __construct(
+        Validator $internalFormatValidator,
         ConverterDispatcher $inputConverterDispatcher,
-        ValidatorDispatcher $inputValidatorDispatcher,
-        Validator $internalFormatValidator
+        ValidatorDispatcher $inputValidatorDispatcher = null
     )
     {
+        $this->internalFormatValidator = $internalFormatValidator;
         $this->inputConverterDispatcher = $inputConverterDispatcher;
         $this->inputValidatorDispatcher = $inputValidatorDispatcher;
-        $this->internalFormatValidator = $internalFormatValidator;
     }
 
     /**
@@ -163,13 +163,16 @@ class Type extends FieldType
 
         if ( $inputValue instanceof DOMDocument )
         {
-            $errors = $this->inputValidatorDispatcher->dispatch( $inputValue );
-            if ( !empty( $errors ) )
+            if ( $this->inputValidatorDispatcher !== null )
             {
-                throw new InvalidArgumentException(
-                    "\$inputValue",
-                    "Validation of XML content failed: " . join( "\n", $errors )
-                );
+                $errors = $this->inputValidatorDispatcher->dispatch( $inputValue );
+                if ( !empty( $errors ) )
+                {
+                    throw new InvalidArgumentException(
+                        "\$inputValue",
+                        "Validation of XML content failed: " . join( "\n", $errors )
+                    );
+                }
             }
 
             $inputValue = new Value(
