@@ -10,6 +10,7 @@
  */
 namespace eZ\Publish\Core\REST\Server\Controller;
 
+use eZ\Publish\API\Repository\Values\Content\LocationQuery;
 use eZ\Publish\Core\REST\Common\Message;
 use eZ\Publish\Core\REST\Common\Exceptions;
 use eZ\Publish\Core\REST\Server\Values;
@@ -730,10 +731,16 @@ class Content extends RestController
             )
         );
 
+        if ($viewInput->query instanceof LocationQuery) {
+            $method = 'findLocations';
+        } else {
+            $method = 'findContent';
+        }
+
         return new Values\RestExecutedView(
             array(
                 'identifier' => $viewInput->identifier,
-                'searchResults' => $this->repository->getSearchService()->findContent($viewInput->query),
+                'searchResults' => $searchResults = $this->repository->getSearchService()->$method($viewInput->query)
             )
         );
     }

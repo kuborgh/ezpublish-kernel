@@ -10,6 +10,9 @@
  */
 namespace eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor;
 
+use eZ\Publish\API\Repository\Values\Content\Content;
+use eZ\Publish\API\Repository\Values\Content\ContentInfo;
+use eZ\Publish\API\Repository\Values\Content\Query\SortClause\Location;
 use eZ\Publish\Core\REST\Common\Output\ValueObjectVisitor;
 use eZ\Publish\Core\REST\Common\Output\Generator;
 use eZ\Publish\Core\REST\Common\Output\Visitor;
@@ -17,6 +20,8 @@ use eZ\Publish\Core\REST\Server\Values\RestContent as RestContentValue;
 use eZ\Publish\API\Repository\ContentService;
 use eZ\Publish\API\Repository\ContentTypeService;
 use eZ\Publish\API\Repository\LocationService;
+use eZ\Publish\Core\REST\Server\Values\RestLocation as RestLocationValueObject;
+use eZ\Publish\Core\Repository\Values\Content\Location as LocationValueObject;
 
 /**
  * Section value object visitor.
@@ -108,16 +113,26 @@ class RestExecutedView extends ValueObjectVisitor
 
             $generator->startObjectElement('value');
 
-            /** @var \eZ\Publish\API\Repository\Values\Content\ContentInfo $contentInfo */
-            $contentInfo = $searchHit->valueObject->contentInfo;
-            $restContent = new RestContentValue(
-                $contentInfo,
-                $this->locationService->loadLocation($contentInfo->mainLocationId),
-                $searchHit->valueObject,
-                $this->contentTypeService->loadContentType($contentInfo->contentTypeId),
-                $this->contentService->loadRelations($searchHit->valueObject->getVersionInfo())
-            );
-            $visitor->visitValueObject($restContent);
+            // @todo Refactor
+            if ($searchHit->valueObject instanceof Content) {
+                /** @var \eZ\Publish\API\Repository\Values\Content\ContentInfo $contentInfo */
+                $contentInfo = $searchHit->valueObject->contentInfo;
+                $valueObject = new RestContentValue(
+                    $contentInfo,
+                    $this->locationService->loadLocation($contentInfo->mainLocationId),
+                    $searchHit->valueObject,
+                    $this->contentTypeService->loadContentType($contentInfo->contentTypeId),
+                    $this->contentService->loadRelations($searchHit->valueObject->getVersionInfo())
+                );
+            } elseif ($searchHit->valueObject instanceof LocationValueObject) {
+                $valueObject = new RestLocationValueObject($searchHit->valueObject, 0);
+            } elseif ($searchHit->valueObject instanceof ContentInfo) {
+                $valueObject = new RestContent($searchHit->valueObject);
+            } else {
+                $valueObject = $searchHit->valueObject;
+            }
+
+            $visitor->visitValueObject($valueObject);
             $generator->endObjectElement('value');
             $generator->endObjectElement('searchHit');
         }

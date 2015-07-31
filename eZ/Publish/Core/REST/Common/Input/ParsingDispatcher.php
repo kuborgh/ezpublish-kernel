@@ -51,9 +51,9 @@ class ParsingDispatcher
      * @param string $contentType
      * @param \eZ\Publish\Core\REST\Common\Input\Parser $parser
      */
-    public function addParser($contentType, Parser $parser)
+    public function addParser($contentType, $version = "1.0", Parser $parser)
     {
-        $this->parsers[$contentType] = $parser;
+        $this->parsers[$contentType][$version] = $parser;
     }
 
     /**
@@ -66,15 +66,27 @@ class ParsingDispatcher
      */
     public function parse(array $data, $mediaType)
     {
+        // Parse version if present
+        $contentType = explode('; ', $mediaType);
+        if (isset($contentType[1])) {
+            $mediaType = $contentType[0];
+            if (($equalPos = strpos($contentType[1], '=')) === false) {
+                throw new Exceptions\Parser("Unknown media type version specification: '{$contentType[1]}'.");
+            }
+            $version = substr($contentType[1], $equalPos+1);
+        } else {
+            $version = "1.0";
+        }
+
         // Remove encoding type
         if (($plusPos = strrpos($mediaType, '+')) !== false) {
             $mediaType = substr($mediaType, 0, $plusPos);
         }
 
-        if (!isset($this->parsers[$mediaType])) {
-            throw new Exceptions\Parser("Unknown content type specification: '{$mediaType}'.");
+        if (!isset($this->parsers[$mediaType][$version])) {
+            throw new Exceptions\Parser("Unknown content type specification: '{$mediaType} (version: $version)'.");
         }
 
-        return $this->parsers[$mediaType]->parse($data, $this);
+        return $this->parsers[$mediaType][$version]->parse($data, $this);
     }
 }
