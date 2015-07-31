@@ -51,7 +51,7 @@ class ParsingDispatcher
      * @param string $contentType
      * @param \eZ\Publish\Core\REST\Common\Input\Parser $parser
      */
-    public function addParser($contentType, $version = "1.0", Parser $parser)
+    public function addParser($contentType, $version = '1.0', Parser $parser)
     {
         $this->parsers[$contentType][$version] = $parser;
     }
@@ -73,9 +73,9 @@ class ParsingDispatcher
             if (($equalPos = strpos($contentType[1], '=')) === false) {
                 throw new Exceptions\Parser("Unknown media type version specification: '{$contentType[1]}'.");
             }
-            $version = substr($contentType[1], $equalPos+1);
+            $version = substr($contentType[1], $equalPos + 1);
         } else {
-            $version = "1.0";
+            $version = '1.0';
         }
 
         // Remove encoding type

@@ -15,7 +15,6 @@ use eZ\Publish\Core\REST\Common\Input\ParsingDispatcher;
 use eZ\Publish\Core\REST\Common\Exceptions;
 use eZ\Publish\API\Repository\Values\Content\Query;
 use eZ\Publish\Core\REST\Server\Values\RestViewInput;
-use eZ\Publish\API\Repository\Values\Content\Query\Criterion\LogicalAnd as LogicalAndCriterion;
 
 /**
  * Parser for ViewInput 1.1.

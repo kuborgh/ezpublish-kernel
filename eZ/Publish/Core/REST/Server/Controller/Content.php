@@ -740,7 +740,7 @@ class Content extends RestController
         return new Values\RestExecutedView(
             array(
                 'identifier' => $viewInput->identifier,
-                'searchResults' => $searchResults = $this->repository->getSearchService()->$method($viewInput->query)
+                'searchResults' => $searchResults = $this->repository->getSearchService()->$method($viewInput->query),
             )
         );
     }

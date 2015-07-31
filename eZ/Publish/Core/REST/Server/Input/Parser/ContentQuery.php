@@ -12,7 +12,6 @@ namespace eZ\Publish\Core\REST\Server\Input\Parser;
 
 use eZ\Publish\API\Repository\Values\Content\Query;
 use eZ\Publish\Core\REST\Server\Input\Parser\Query as QueryParser;
-use eZ\Publish\Core\REST\Common\Exceptions;
 
 /**
  * Parser for ViewInput.

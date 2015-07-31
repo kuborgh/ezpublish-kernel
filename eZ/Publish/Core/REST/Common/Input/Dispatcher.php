@@ -90,7 +90,7 @@ class Dispatcher
         if (count($mediaTypeParts) > 1) {
             $parameters = $this->parseParameters(trim($mediaTypeParts[1]));
             if (isset($parameters['version'])) {
-                $media .= "; version=" . $parameters['version'];
+                $media .= '; version=' . $parameters['version'];
             }
         }
 
@@ -124,6 +124,7 @@ class Dispatcher
             list($parameterName, $parameterValue) = explode('=', $parameterString);
             $parameters[$parameterName] = $parameterValue;
         }
+
         return $parameters;
     }
 }

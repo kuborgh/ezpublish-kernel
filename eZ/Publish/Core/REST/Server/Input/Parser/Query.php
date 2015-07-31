@@ -12,7 +12,6 @@ namespace eZ\Publish\Core\REST\Server\Input\Parser;
 
 use eZ\Publish\Core\REST\Common\Input\ParsingDispatcher;
 use eZ\Publish\Core\REST\Server\Input\Parser\Criterion as CriterionParser;
-use eZ\Publish\Core\REST\Common\Exceptions;
 use eZ\Publish\API\Repository\Values\Content\Query\Criterion\LogicalAnd as LogicalAndCriterion;
 
 /**
@@ -74,7 +73,7 @@ abstract class Query extends CriterionParser
     }
 
     /**
-     * Builds and returns the Query (Location or Content object)
+     * Builds and returns the Query (Location or Content object).
      * @return \eZ\Publish\API\Repository\Values\Content\Query
      */
     abstract protected function buildQuery();
