@@ -1,8 +1,6 @@
 <?php
 
 /**
- * File containing the ViewInput parser class.
- *
  * @copyright Copyright (C) eZ Systems AS. All rights reserved.
  * @license For full copyright and license information view LICENSE file distributed with this source code.
  *
@@ -15,12 +13,12 @@ use eZ\Publish\Core\REST\Server\Input\Parser\Criterion as CriterionParser;
 use eZ\Publish\API\Repository\Values\Content\Query\Criterion\LogicalAnd as LogicalAndCriterion;
 
 /**
- * Parser for ViewInput.
+ * Content/Location Query Parser.
  */
 abstract class Query extends CriterionParser
 {
     /**
-     * Parses input structure to a RestViewInput struct.
+     * Parses input structure to a Query.
      *
      * @param array $data
      * @param \eZ\Publish\Core\REST\Common\Input\ParsingDispatcher $parsingDispatcher
