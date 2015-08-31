@@ -205,6 +205,7 @@ class DoctrineDatabase extends Gateway
 
         if ( $sort !== null )
         {
+            $this->sortClauseConverter->reset();
             $this->sortClauseConverter->applyJoin( $query, $sort );
         }
 
@@ -240,6 +241,7 @@ class DoctrineDatabase extends Gateway
 
         if ( $sort !== null )
         {
+            $this->sortClauseConverter->reset();
             $this->sortClauseConverter->applySelect( $query, $sort );
         }
 
