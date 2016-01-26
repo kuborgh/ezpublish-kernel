@@ -24,18 +24,9 @@
 {% endspaceless %}
 {% endblock %}
 
-{% block ezxmltext_field %}
-{% spaceless %}
-    {% set field_value = field.value.xml|xmltext_to_html5 %}
-    {{ block( 'simple_block_field' ) }}
-{% endspaceless %}
-{% endblock %}
-
 {% block ezrichtext_field %}
-{% spaceless %}
-    {% set field_value = field.value.xml|richtext_to_html5 %}
+    {%- set field_value = field.value.xml|richtext_to_html5 -%}
     {{ block( 'simple_block_field' ) }}
-{% endspaceless %}
 {% endblock %}
 
 {% block ezauthor_field %}
@@ -274,7 +265,7 @@
     <ul {{ block( 'field_attributes' ) }}>
         {% for contentId in field.value.destinationContentIds %}
         <li>
-            {{ render( controller( "ez_content:viewContent", {'contentId': contentId, 'viewType': 'embed', 'noLayout': 1} ) ) }}
+            {{ render( controller( "ez_content:viewAction", {'contentId': contentId, 'viewType': 'embed', 'noLayout': 1} ) ) }}
         </li>
         {% endfor %}
     </ul>
@@ -405,6 +396,7 @@
  #   - alias (image variation name). Defaults to "original" (e.g. image originally uploaded)
  #   - parameters.width. Allows forcing width of the image in the HTML
  #   - parameters.height. Allows forcing height of the image in the HTML
+ #   - parameters.class. Allows setting CSS custom class name for the image
  #}
 {% block ezimage_field %}
 {% spaceless %}
@@ -414,7 +406,7 @@
     {% set src = imageAlias ? asset( imageAlias.uri ) : "//:0" %}
     {% set width = parameters.width is defined ? parameters.width : imageAlias.width %}
     {% set height = parameters.height is defined ? parameters.height : imageAlias.height %}
-    <img src="{{ src }}"{% if width %} width="{{ width }}"{% endif %}{% if height %} height="{{ height }}"{% endif %} alt="{{ field.value.alternativeText }}" />
+    <img src="{{ src }}"{% if width %} width="{{ width }}"{% endif %}{% if height %} height="{{ height }}"{% endif %} alt="{{ field.value.alternativeText }}"{% if parameters.class is defined and parameters.class is not empty %} class="{{ parameters.class }}"{% endif %} />
 </figure>
 {% endif %}
 {% endspaceless %}
@@ -424,7 +416,7 @@
 {% spaceless %}
 {% if not ez_is_field_empty( content, field ) %}
     <div {{ block( 'field_attributes' ) }}>
-        {{ render( controller( "ez_content:viewContent", {'contentId': field.value.destinationContentId, 'viewType': 'text_linked', 'noLayout': 1} ) ) }}
+        {{ render( controller( "ez_content:viewAction", {'contentId': field.value.destinationContentId, 'viewType': 'text_linked', 'noLayout': 1} ) ) }}
     </div>
 {% endif %}
 {% endspaceless %}
@@ -442,7 +434,7 @@
 {% endblock %}
 
 
-{# The simple_block_field block is a shorthand html block-based fields (like eztext or ezxmltext) #}
+{# The simple_block_field block is a shorthand html block-based fields (like eztext or ezrichtext) #}
 {# You can define a field_value variable before rendering this one if you need special operation for rendering content (i.e. nl2br) #}
 {% block simple_block_field %}
 {% spaceless %}
@@ -450,7 +442,7 @@
         {% set field_value = field.value %}
     {% endif %}
     <div {{ block( 'field_attributes' ) }}>
-        {{ field_value|raw }}
+        {% endspaceless %}{{ field_value|raw }}{% spaceless %}
     </div>
 {% endspaceless %}
 {% endblock %}

@@ -96,10 +96,12 @@ class DomainMapper
      *
      * @param \eZ\Publish\SPI\Persistence\Content $spiContent
      * @param ContentType|SPIType $contentType
+     * @param array|null $fieldLanguages Language codes to filter fields on
+     * @param string|null $fieldAlwaysAvailableLanguage Language code fallback if a given field is not found in $fieldLanguages
      *
      * @return \eZ\Publish\Core\Repository\Values\Content\Content
      */
-    public function buildContentDomainObject(SPIContent $spiContent, $contentType = null)
+    public function buildContentDomainObject(SPIContent $spiContent, $contentType = null, array $fieldLanguages = null, $fieldAlwaysAvailableLanguage = null)
     {
         if ($contentType === null) {
             $contentType = $this->contentTypeHandler->load(
@@ -109,7 +111,7 @@ class DomainMapper
 
         return new Content(
             array(
-                'internalFields' => $this->buildDomainFields($spiContent->fields, $contentType),
+                'internalFields' => $this->buildDomainFields($spiContent->fields, $contentType, $fieldLanguages, $fieldAlwaysAvailableLanguage),
                 'versionInfo' => $this->buildVersionInfoDomainObject($spiContent->versionInfo),
             )
         );
@@ -118,24 +120,56 @@ class DomainMapper
     /**
      * Returns an array of domain fields created from given array of SPI fields.
      *
+     * @throws InvalidArgumentType On invalid $contentType
+     *
      * @param \eZ\Publish\SPI\Persistence\Content\Field[] $spiFields
      * @param ContentType|SPIType $contentType
+     * @param array|null $languages Language codes to filter fields on
+     * @param string|null $alwaysAvailableLanguage Language code fallback if a given field is not found in $languages
      *
      * @return array
      */
-    public function buildDomainFields(array $spiFields, $contentType)
+    public function buildDomainFields(array $spiFields, $contentType, array $languages = null, $alwaysAvailableLanguage = null)
     {
-        $fieldIdentifierMap = array();
         if (!$contentType instanceof SPIType && !$contentType instanceof ContentType) {
             throw new InvalidArgumentType('$contentType', 'SPI ContentType | API ContentType');
         }
 
+        $fieldIdentifierMap = array();
         foreach ($contentType->fieldDefinitions as $fieldDefinitions) {
             $fieldIdentifierMap[$fieldDefinitions->id] = $fieldDefinitions->identifier;
         }
 
+        $fieldInFilterLanguagesMap = array();
+        if ($languages !== null && $alwaysAvailableLanguage !== null) {
+            foreach ($spiFields as $spiField) {
+                if (in_array($spiField->languageCode, $languages)) {
+                    $fieldInFilterLanguagesMap[$spiField->fieldDefinitionId] = true;
+                }
+            }
+        }
+
         $fields = array();
         foreach ($spiFields as $spiField) {
+            // We ignore fields in content not part of the content type
+            if (!isset($fieldIdentifierMap[$spiField->fieldDefinitionId])) {
+                continue;
+            }
+
+            if ($languages !== null && !in_array($spiField->languageCode, $languages)) {
+                // If filtering is enabled we ignore fields in other languages then $fieldLanguages, if:
+                if ($alwaysAvailableLanguage === null) {
+                    // Ignore field if we don't have $alwaysAvailableLanguageCode fallback
+                    continue;
+                } elseif (!empty($fieldInFilterLanguagesMap[$spiField->fieldDefinitionId])) {
+                    // Ignore field if it exists in one of the filtered languages
+                    continue;
+                } elseif ($spiField->languageCode !== $alwaysAvailableLanguage) {
+                    // Also ignore if field is not in $alwaysAvailableLanguageCode
+                    continue;
+                }
+            }
+
             $fields[] = new Field(
                 array(
                     'id' => $spiField->id,
@@ -276,6 +310,7 @@ class DomainMapper
     {
         // TODO: this is hardcoded workaround for missing ContentInfo on root location
         if ($spiLocation->id == 1) {
+            $legacyDateTime = $this->getDateTime(1030968000); //  first known commit of eZ Publish 3.x 
             $contentInfo = new ContentInfo(
                 array(
                     'id' => 0,
@@ -283,6 +318,14 @@ class DomainMapper
                     'sectionId' => 1,
                     'mainLocationId' => 1,
                     'contentTypeId' => 1,
+                    'currentVersionNo' => 1,
+                    'published' => 1,
+                    'ownerId' => 14, // admin user
+                    'modificationDate' => $legacyDateTime,
+                    'publishedDate' => $legacyDateTime,
+                    'alwaysAvailable' => 1,
+                    'remoteId' => null,
+                    'mainLanguageCode' => 'eng-GB',
                 )
             );
         } else {

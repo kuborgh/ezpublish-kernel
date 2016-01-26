@@ -141,7 +141,7 @@ class ContentTypeService implements ContentTypeServiceInterface
         }
 
         if ($contentTypeGroupCreateStruct->creatorId === null) {
-            $userId = $this->repository->getCurrentUser()->id;
+            $userId = $this->repository->getCurrentUserReference()->getUserId();
         } else {
             $userId = $contentTypeGroupCreateStruct->creatorId;
         }
@@ -272,7 +272,7 @@ class ContentTypeService implements ContentTypeServiceInterface
                     $contentTypeGroupUpdateStruct->identifier,
                 'modified' => $modifiedTimestamp,
                 'modifierId' => $contentTypeGroupUpdateStruct->modifierId === null ?
-                    $this->repository->getCurrentUser()->id :
+                    $this->repository->getCurrentUserReference()->getUserId() :
                     $contentTypeGroupUpdateStruct->modifierId,
             )
         );
@@ -769,7 +769,8 @@ class ContentTypeService implements ContentTypeServiceInterface
 
             if ($fieldType->isSingular() && isset($fieldTypeIdentifierSet[$fieldDefinitionCreateStruct->fieldTypeIdentifier])) {
                 throw new ContentTypeValidationException(
-                    "FieldType '{$fieldDefinitionCreateStruct->fieldTypeIdentifier}' is singular and can't be repeated in a ContentType"
+                    "FieldType '%identifier%' is singular and can't be repeated in a ContentType",
+                    ['%identifier%' => $fieldDefinitionCreateStruct->fieldTypeIdentifier]
                 );
             }
 
@@ -805,7 +806,7 @@ class ContentTypeService implements ContentTypeServiceInterface
         );
 
         if ($contentTypeCreateStruct->creatorId === null) {
-            $contentTypeCreateStruct->creatorId = $this->repository->getCurrentUser()->id;
+            $contentTypeCreateStruct->creatorId = $this->repository->getCurrentUserReference()->getUserId();
         }
 
         if ($contentTypeCreateStruct->creationDate === null) {
@@ -1215,7 +1216,7 @@ class ContentTypeService implements ContentTypeServiceInterface
             SPIContentType::STATUS_DRAFT
         );
 
-        if ($spiContentType->modifierId != $this->repository->getCurrentUser()->id) {
+        if ($spiContentType->modifierId != $this->repository->getCurrentUserReference()->getUserId()) {
             throw new NotFoundException('ContentType owned by someone else', $contentTypeId);
         }
 
@@ -1279,7 +1280,7 @@ class ContentTypeService implements ContentTypeServiceInterface
             $this->repository->beginTransaction();
             try {
                 $spiContentType = $this->contentTypeHandler->createDraft(
-                    $this->repository->getCurrentUser()->id,
+                    $this->repository->getCurrentUserReference()->getUserId(),
                     $contentType->id
                 );
                 $this->repository->commit();
@@ -1398,7 +1399,7 @@ class ContentTypeService implements ContentTypeServiceInterface
             time();
         $updateStruct->modifierId = $contentTypeUpdateStruct->modifierId !== null ?
             $contentTypeUpdateStruct->modifierId :
-            $this->repository->getCurrentUser()->id;
+            $this->repository->getCurrentUserReference()->getUserId();
 
         $updateStruct->urlAliasSchema = $contentTypeUpdateStruct->urlAliasSchema !== null ?
             $contentTypeUpdateStruct->urlAliasSchema :
@@ -1476,13 +1477,13 @@ class ContentTypeService implements ContentTypeServiceInterface
         }
 
         if (empty($creator)) {
-            $creator = $this->repository->getCurrentUser();
+            $creator = $this->repository->getCurrentUserReference();
         }
 
         $this->repository->beginTransaction();
         try {
             $spiContentType = $this->contentTypeHandler->copy(
-                $creator->id,
+                $creator->getUserId(),
                 $contentType->id,
                 SPIContentType::STATUS_DEFINED
             );
@@ -1926,5 +1927,19 @@ class ContentTypeService implements ContentTypeServiceInterface
     public function newFieldDefinitionUpdateStruct()
     {
         return new FieldDefinitionUpdateStruct();
+    }
+
+    /**
+     * Returns true if the given content type $contentType has content instances.
+     *
+     * @since 6.0.1
+     *
+     * @param \eZ\Publish\API\Repository\Values\ContentType\ContentType $contentType
+     *
+     * @return bool
+     */
+    public function isContentTypeUsed(APIContentType $contentType)
+    {
+        return $this->contentTypeHandler->getContentCount($contentType->id) > 0;
     }
 }

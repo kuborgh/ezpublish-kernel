@@ -17,6 +17,8 @@ parameters:
     ezpublish.api.role.limitation_type.user_group.class: eZ\Publish\Core\Limitation\UserGroupLimitationType
     ezpublish.api.role.limitation_type.status.class: eZ\Publish\Core\Limitation\StatusLimitationType
 
+    ezpublish.api.role.policy_map: {}
+
 services:
     ## Implemented Limitations
     ezpublish.api.role.limitation_type.content_type:
@@ -81,6 +83,7 @@ services:
 
     ezpublish.api.role.limitation_type.siteaccess:
         class: %ezpublish.api.role.limitation_type.siteaccess.class%
+        arguments: [%ezpublish.siteaccess.list%]
         tags:
             - {name: ezpublish.limitationType, alias: SiteAccess}
 

@@ -1,16 +1,15 @@
 {
     "name": "ezsystems/ezpublish-kernel",
-    "description": "eZ Publish API and kernel. This is the heart of eZ Publish 5.",
+    "description": "Kernel used by ezsystems/ezplatform and derivatives. Provides the Content Repository, its APIs, and the application's Symfony framework integration.",
     "homepage": "http://share.ez.no",
     "license": "GPL-2.0",
     "suggest": {
         "php-64bit": "For support of more than 30 languages, a 64bit php installation on all involved prod/dev machines is required"
     },
     "require": {
-        "php": ">=5.4.4",
+        "php": "~5.5|~7.0",
         "ext-ctype": "*",
         "ext-fileinfo": "*",
-        "ext-gd": "*",
         "ext-intl": "*",
         "ext-json": "*",
         "ext-mbstring": "*",
@@ -40,7 +39,7 @@
         "matthiasnoback/symfony-dependency-injection-test": "0.*",
         "mockery/mockery": "~0.9.4",
         "symfony/assetic-bundle": "~2.3",
-        "zendframework/zend-code": "~2.4.3"
+        "ezsystems/behatbundle": "dev-master"
     },
     "replace": {
         "ezsystems/ezpublish": "*",
@@ -49,7 +48,8 @@
     },
     "autoload": {
         "psr-4": {
-            "EzSystems\\PlatformInstallerBundle\\": "eZ/Bundle/PlatformInstallerBundle/src"
+            "EzSystems\\PlatformInstallerBundle\\": "eZ/Bundle/PlatformInstallerBundle/src",
+            "EzSystems\\PlatformBehatBundle\\": "eZ/Bundle/PlatformBehatBundle"
         },
         "psr-0": {
             "eZ": ""
@@ -60,8 +60,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "6.0.x-dev"
-        },
-        "ezpublish-legacy-dir": "vendor/ezsystems/ezpublish-legacy"
+            "dev-master": "6.1.x-dev"
+        }
     }
 }

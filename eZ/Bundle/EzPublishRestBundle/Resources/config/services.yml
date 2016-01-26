@@ -20,6 +20,7 @@ parameters:
     ezpublish_rest.controller.url_alias.class: eZ\Publish\Core\REST\Server\Controller\URLAlias
     ezpublish_rest.controller.options.class: eZ\Publish\Core\REST\Server\Controller\Options
     ezpublish_rest.controller.services.class: eZ\Publish\Core\REST\Server\Controller\Services
+    ezpublish_rest.controller.views.class: eZ\Publish\Core\REST\Server\Controller\Views
 
     ezpublish_rest.factory.class: eZ\Bundle\EzPublishRestBundle\ApiLoader\Factory
     ezpublish_rest.request_parser.class: eZ\Bundle\EzPublishRestBundle\RequestParser\Router
@@ -40,9 +41,9 @@ parameters:
     ezpublish_rest.field_type_processor.ezobjectrelation.class: eZ\Publish\Core\REST\Common\FieldTypeProcessor\RelationProcessor
     ezpublish_rest.field_type_processor.eztime.class: eZ\Publish\Core\REST\Common\FieldTypeProcessor\TimeProcessor
     ezpublish_rest.field_type_processor.ezrichtext.class: eZ\Publish\Core\REST\Common\FieldTypeProcessor\RichTextProcessor
-    ezpublish_rest.field_type_processor.ezxmltext.class: eZ\Publish\Core\REST\Common\FieldTypeProcessor\XmlTextProcessor
     ezpublish_rest.field_type_processor.ezbinaryfile.class: eZ\Publish\Core\REST\Common\FieldTypeProcessor\BinaryProcessor
     ezpublish_rest.field_type_processor.ezpage.class: eZ\Publish\Core\REST\Common\FieldTypeProcessor\PageProcessor
+    ezpublish_rest.field_type_processor.ezfloat.class: eZ\Publish\Core\REST\Common\FieldTypeProcessor\FloatProcessor
 
     ezpublish_rest.output.visitor.dispatcher.class: eZ\Publish\Core\REST\Server\View\AcceptHeaderVisitorDispatcher
     ezpublish_rest.output.visitor.class: eZ\Publish\Core\REST\Common\Output\Visitor
@@ -210,6 +211,12 @@ services:
             - @ezpublish.api.service.url_alias
             - @ezpublish.api.service.location
 
+    ezpublish_rest.controller.views:
+        class: %ezpublish_rest.controller.views.class%
+        parent: ezpublish_rest.controller.base
+        arguments:
+            - @ezpublish.api.service.search
+
     ezpublish_rest.request_listener:
         class: %ezpublish_rest.request_listener.class%
         arguments:
@@ -244,6 +251,7 @@ services:
 
     ezpublish_rest.field_type_processor_registry:
         class: %ezpublish_rest.field_type_processor_registry.class%
+        lazy: true
 
     ezpublish_rest.field_type_processor.ezimage:
         class: %ezpublish_rest.field_type_processor.ezimage.class%
@@ -291,11 +299,6 @@ services:
         tags:
             - { name: ezpublish_rest.field_type_processor, alias: ezrichtext }
 
-    ezpublish_rest.field_type_processor.ezxmltext:
-        class: %ezpublish_rest.field_type_processor.ezxmltext.class%
-        tags:
-            - { name: ezpublish_rest.field_type_processor, alias: ezxmltext }
-
     ezpublish_rest.field_type_processor.ezbinaryfile:
         class: %ezpublish_rest.field_type_processor.ezbinaryfile.class%
         factory: ["@ezpublish_rest.factory", getBinaryFileFieldTypeProcessor]
@@ -308,6 +311,11 @@ services:
         class: %ezpublish_rest.field_type_processor.ezpage.class%
         tags:
             - { name: ezpublish_rest.field_type_processor, alias: ezpage }
+
+    ezpublish_rest.field_type_processor.ezfloat:
+        class: %ezpublish_rest.field_type_processor.ezfloat.class%
+        tags:
+            - { name: ezpublish_rest.field_type_processor, alias: ezfloat }
 
     ### OUTPUT
 

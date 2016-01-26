@@ -14,6 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use eZ\Publish\SPI\Persistence\Content\ContentInfo;
 use PDO;
 
 class ElasticsearchCreateIndexCommand extends ContainerAwareCommand
@@ -21,7 +22,7 @@ class ElasticsearchCreateIndexCommand extends ContainerAwareCommand
     protected function configure()
     {
         $this
-            ->setName('ezpublish:elasticsearch_create_index')
+            ->setName('ezplatform:elasticsearch_create_index')
             ->setDescription('Indexes the configured database in configured Elasticsearch index')
             ->addArgument('bulk_count', InputArgument::OPTIONAL, 'Number of Content objects indexed at once', 5)
             ->setHelp(
@@ -43,18 +44,18 @@ EOT
         $databaseHandler = $this->getContainer()->get('ezpublish.connection');
 
         // Indexing Content
-        $query = $databaseHandler
-            ->createSelectQuery()
-            ->select('count(id)')
-            ->from('ezcontentobject');
+        $query = $databaseHandler->createSelectQuery();
+        $query->select('count(id)')
+            ->from('ezcontentobject')
+            ->where($query->expr->eq('status', ContentInfo::STATUS_PUBLISHED));
         $stmt = $query->prepare();
         $stmt->execute();
         $totalCount = $stmt->fetchColumn();
 
-        $query = $databaseHandler
-            ->createSelectQuery()
-            ->select('id', 'current_version')
-            ->from('ezcontentobject');
+        $query = $databaseHandler->createSelectQuery();
+        $query->select('id', 'current_version')
+            ->from('ezcontentobject')
+            ->where($query->expr->eq('status', ContentInfo::STATUS_PUBLISHED));
 
         $stmt = $query->prepare();
         $stmt->execute();

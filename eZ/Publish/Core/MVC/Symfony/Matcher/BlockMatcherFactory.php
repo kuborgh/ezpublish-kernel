@@ -11,17 +11,26 @@
 namespace eZ\Publish\Core\MVC\Symfony\Matcher;
 
 use eZ\Publish\API\Repository\Values\ValueObject;
-use eZ\Publish\Core\FieldType\Page\Parts\Block;
 use eZ\Publish\Core\MVC\Symfony\Matcher\Block\MatcherInterface as BlockMatcherInterface;
 use eZ\Publish\Core\MVC\Symfony\Matcher\MatcherInterface as BaseMatcherInterface;
+use eZ\Publish\Core\MVC\Symfony\View\View;
 use InvalidArgumentException;
 
+/**
+ * @deprecated Deprecated since 6.0, will be removed in 6.1. Use the AbstractMatcherFactory instead.
+ */
 class BlockMatcherFactory extends AbstractMatcherFactory
 {
     const MATCHER_RELATIVE_NAMESPACE = 'eZ\\Publish\\Core\\MVC\\Symfony\\Matcher\\Block';
 
     protected function getMatcher($matcherIdentifier)
     {
+        @trigger_error(
+            "BlockMatcherFactory is deprecated, and will be removed in ezpublish-kernel 6.1.\n" .
+            'Use the ServiceAwareMatcherFactory with the relative namespace as a constructor argument instead.',
+            E_USER_DEPRECATED
+        );
+
         $matcher = parent::getMatcher($matcherIdentifier);
         if (!$matcher instanceof BlockMatcherInterface) {
             throw new InvalidArgumentException(
@@ -35,19 +44,15 @@ class BlockMatcherFactory extends AbstractMatcherFactory
     /**
      * Checks if $valueObject matches $matcher rules.
      *
-     * @param \eZ\Publish\Core\MVC\Symfony\Matcher\Block\MatcherInterface|\eZ\Publish\Core\MVC\Symfony\Matcher\MatcherInterface $matcher
+     * @param \eZ\Publish\Core\MVC\Symfony\Matcher\MatcherInterface $matcher
      * @param ValueObject $valueObject
      *
      * @throws InvalidArgumentException
      *
      * @return bool
      */
-    protected function doMatch(BaseMatcherInterface $matcher, ValueObject $valueObject)
+    protected function doMatch(BaseMatcherInterface $matcher, View $view)
     {
-        if (!$valueObject instanceof Block) {
-            throw new InvalidArgumentException('Value object must be a valid Block instance');
-        }
-
-        return $matcher->matchBlock($valueObject);
+        return $matcher->match($view);
     }
 }

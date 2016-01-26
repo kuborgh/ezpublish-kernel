@@ -20,6 +20,7 @@ use eZ\Publish\Core\MVC\Symfony\Event\APIContentExceptionEvent;
 use eZ\Publish\Core\MVC\Symfony\Security\Authorization\Attribute as AuthorizationAttribute;
 use eZ\Publish\Core\Base\Exceptions\UnauthorizedException;
 use eZ\Publish\API\Repository\Values\Content\VersionInfo as APIVersionInfo;
+use eZ\Publish\Core\MVC\Symfony\View\ContentView;
 use eZ\Publish\Core\MVC\Symfony\View\ViewManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -28,6 +29,11 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use DateTime;
 use Exception;
 
+/**
+ * This controller provides the content view feature.
+ *
+ * @since 6.0.0 All methods except `view()` are deprecated and will be removed in the future.
+ */
 class ViewController extends Controller
 {
     /**
@@ -44,6 +50,40 @@ class ViewController extends Controller
     {
         $this->viewManager = $viewManager;
         $this->authorizationChecker = $authorizationChecker;
+    }
+
+    /**
+     * This is the default view action or a ContentView object.
+     *
+     * It doesn't do anything by itself: the returned View object is rendered by the ViewRendererListener
+     * into an HttpFoundation Response.
+     *
+     * This action can be selectively replaced by a custom action by means of content_view
+     * configuration. Custom actions can add parameters to the view and customize the Response the View will be
+     * converted to. They may also bypass the ViewRenderer by returning an HttpFoundation Response.
+     *
+     * Cache is in both cases handled by the CacheViewResponseListener.
+     *
+     * @param \eZ\Publish\Core\MVC\Symfony\View\ContentView $view
+     *
+     * @return \eZ\Publish\Core\MVC\Symfony\View\ContentView
+     */
+    public function viewAction(ContentView $view)
+    {
+        return $view;
+    }
+
+    /**
+     * Embed a content.
+     * Behaves mostly like viewAction(), but with specific content load permission handling.
+     *
+     * @param \eZ\Publish\Core\MVC\Symfony\View\ContentView $view
+     *
+     * @return \eZ\Publish\Core\MVC\Symfony\View\ContentView
+     */
+    public function embedAction(ContentView $view)
+    {
+        return $view;
     }
 
     /**
@@ -99,9 +139,17 @@ class ViewController extends Controller
      * @throws \Exception
      *
      * @return \Symfony\Component\HttpFoundation\Response
+     *
+     * @deprecated Since 6.0.0. Viewing locations is now done with ViewContent.
      */
     public function viewLocation($locationId, $viewType, $layout = false, array $params = array())
     {
+        trigger_error(
+            "ViewController::viewLocation() is deprecated since kernel 6.0.0, and will be removed in the future.\n" .
+            'Use ViewController::viewAction() instead.',
+            E_USER_DEPRECATED
+        );
+
         $this->performAccessChecks();
         $response = $this->buildResponse();
 
@@ -151,9 +199,17 @@ class ViewController extends Controller
      * @throws \Exception
      *
      * @return \Symfony\Component\HttpFoundation\Response
+     *
+     * @deprecated Since 6.0.0. Viewing locations is now done with ViewContent.
      */
     public function embedLocation($locationId, $viewType, $layout = false, array $params = array())
     {
+        trigger_error(
+            "ViewController::embedLocation() is deprecated since kernel 6.0.0, and will be removed in the future.\n" .
+            'Use ViewController::viewAction() instead.',
+            E_USER_DEPRECATED
+        );
+
         $this->performAccessChecks();
         $response = $this->buildResponse();
 
@@ -230,6 +286,12 @@ class ViewController extends Controller
      */
     public function viewContent($contentId, $viewType, $layout = false, array $params = array())
     {
+        trigger_error(
+            "ViewController::viewContent() is deprecated since kernel 6.0.0, and will be removed in the future.\n" .
+            'Use ViewController::viewAction() instead.',
+            E_USER_DEPRECATED
+        );
+
         if ($viewType === 'embed') {
             return $this->embedContent($contentId, $viewType, $layout, $params);
         }
@@ -244,6 +306,9 @@ class ViewController extends Controller
                 return $response;
             }
 
+            if (!isset($params['location']) && !isset($params['locationId'])) {
+                $params['location'] = $this->getRepository()->getLocationService()->loadLocation($content->contentInfo->mainLocationId);
+            }
             $response->headers->set('X-Location-Id', $content->contentInfo->mainLocationId);
             $response->setContent(
                 $this->renderContent($content, $viewType, $layout, $params)
@@ -276,6 +341,12 @@ class ViewController extends Controller
      */
     public function embedContent($contentId, $viewType, $layout = false, array $params = array())
     {
+        trigger_error(
+            "ViewController::embedContent() is deprecated since kernel 6.0.0, and will be removed in the future.\n" .
+            'Use ViewController::viewAction() instead.',
+            E_USER_DEPRECATED
+        );
+
         $this->performAccessChecks();
         $response = $this->buildResponse();
 

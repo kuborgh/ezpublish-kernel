@@ -24,7 +24,7 @@ class DoctrineDatabase extends Gateway
     /**
      * Database handler.
      *
-     * @var \DatabaseHandler
+     * @var \eZ\Publish\Core\Persistence\Database\DatabaseHandler
      */
     protected $handler;
 
@@ -47,6 +47,18 @@ class DoctrineDatabase extends Gateway
      */
     public function createRole(Role $role)
     {
+        // Role original ID is set when creating a draft from an existing role
+        if ($role->status === Role::STATUS_DRAFT && $role->id) {
+            $roleOriginalId = $role->id;
+        } elseif ($role->status === Role::STATUS_DRAFT) {
+            // Not using a constant here as this is legacy storage engine specific.
+            // -1 means "Newly created role".
+            $roleOriginalId = -1;
+        } else {
+            // Role::STATUS_DEFINED value is 0, which is the expected value for version column for this status.
+            $roleOriginalId = Role::STATUS_DEFINED;
+        }
+
         $query = $this->handler->createInsertQuery();
         $query
             ->insertInto($this->handler->quoteTable('ezrole'))
@@ -63,32 +75,53 @@ class DoctrineDatabase extends Gateway
                 $this->handler->quoteColumn('value'),
                 0
             )->set(
+                // Column name "version" is misleading here as it stores originalId when creating a draft from an existing role.
+                // But hey, this is legacy! :-)
                 $this->handler->quoteColumn('version'),
-                0
+                $query->bindValue($roleOriginalId)
             );
         $query->prepare()->execute();
 
-        $role->id = $this->handler->lastInsertId(
-            $this->handler->getSequenceName('ezrole', 'id')
-        );
+        if (!isset($role->id) || (int)$role->id < 1 || $role->status === Role::STATUS_DRAFT) {
+            $role->id = $this->handler->lastInsertId(
+                $this->handler->getSequenceName('ezrole', 'id')
+            );
+        }
+
+        $role->originalId = $roleOriginalId;
     }
 
     /**
      * Loads a specified role by id.
      *
      * @param mixed $roleId
+     * @param int $status One of Role::STATUS_DEFINED|Role::STATUS_DRAFT
      *
      * @return array
      */
-    public function loadRole($roleId)
+    public function loadRole($roleId, $status = Role::STATUS_DEFINED)
     {
         $query = $this->handler->createSelectQuery();
+        if ($status === Role::STATUS_DEFINED) {
+            $draftCondition = $query->expr->eq(
+                $this->handler->quoteColumn('version', 'ezrole'),
+                $query->bindValue($status, null, \PDO::PARAM_INT)
+            );
+        } else {
+            $draftCondition = $query->expr->neq(
+                $this->handler->quoteColumn('version', 'ezrole'),
+                $query->bindValue(Role::STATUS_DEFINED, null, \PDO::PARAM_INT)
+            );
+        }
+
         $query->select(
             $this->handler->aliasedColumn($query, 'id', 'ezrole'),
             $this->handler->aliasedColumn($query, 'name', 'ezrole'),
+            $this->handler->aliasedColumn($query, 'version', 'ezrole'),
             $this->handler->aliasedColumn($query, 'id', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'function_name', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'module_name', 'ezpolicy'),
+            $this->handler->aliasedColumn($query, 'original_id', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'identifier', 'ezpolicy_limitation'),
             $this->handler->aliasedColumn($query, 'value', 'ezpolicy_limitation_value')
         )->from(
@@ -112,9 +145,12 @@ class DoctrineDatabase extends Gateway
                 $this->handler->quoteColumn('id', 'ezpolicy_limitation')
             )
         )->where(
-            $query->expr->eq(
-                $this->handler->quoteColumn('id', 'ezrole'),
-                $query->bindValue($roleId, null, \PDO::PARAM_INT)
+            $query->expr->lAnd(
+                $query->expr->eq(
+                    $this->handler->quoteColumn('id', 'ezrole'),
+                    $query->bindValue($roleId, null, \PDO::PARAM_INT)
+                ),
+                $draftCondition
             )
         );
 
@@ -128,18 +164,89 @@ class DoctrineDatabase extends Gateway
      * Loads a specified role by $identifier.
      *
      * @param string $identifier
+     * @param int $status One of Role::STATUS_DEFINED|Role::STATUS_DRAFT
      *
      * @return array
      */
-    public function loadRoleByIdentifier($identifier)
+    public function loadRoleByIdentifier($identifier, $status = Role::STATUS_DEFINED)
+    {
+        $query = $this->handler->createSelectQuery();
+        if ($status === Role::STATUS_DEFINED) {
+            $roleVersionCondition = $query->expr->eq(
+                $this->handler->quoteColumn('version', 'ezrole'),
+                $query->bindValue($status, null, \PDO::PARAM_INT)
+            );
+        } else {
+            $roleVersionCondition = $query->expr->neq(
+                $this->handler->quoteColumn('version', 'ezrole'),
+                $query->bindValue($status, null, \PDO::PARAM_INT)
+            );
+        }
+
+        $query->select(
+            $this->handler->aliasedColumn($query, 'id', 'ezrole'),
+            $this->handler->aliasedColumn($query, 'name', 'ezrole'),
+            $this->handler->aliasedColumn($query, 'version', 'ezrole'),
+            $this->handler->aliasedColumn($query, 'id', 'ezpolicy'),
+            $this->handler->aliasedColumn($query, 'function_name', 'ezpolicy'),
+            $this->handler->aliasedColumn($query, 'module_name', 'ezpolicy'),
+            $this->handler->aliasedColumn($query, 'original_id', 'ezpolicy'),
+            $this->handler->aliasedColumn($query, 'identifier', 'ezpolicy_limitation'),
+            $this->handler->aliasedColumn($query, 'value', 'ezpolicy_limitation_value')
+        )->from(
+            $this->handler->quoteTable('ezrole')
+        )->leftJoin(
+            $this->handler->quoteTable('ezpolicy'),
+                $query->expr->eq(
+                $this->handler->quoteColumn('role_id', 'ezpolicy'),
+                $this->handler->quoteColumn('id', 'ezrole')
+            )
+        )->leftJoin(
+            $this->handler->quoteTable('ezpolicy_limitation'),
+            $query->expr->eq(
+                $this->handler->quoteColumn('policy_id', 'ezpolicy_limitation'),
+                $this->handler->quoteColumn('id', 'ezpolicy')
+            )
+        )->leftJoin(
+            $this->handler->quoteTable('ezpolicy_limitation_value'),
+            $query->expr->eq(
+                $this->handler->quoteColumn('limitation_id', 'ezpolicy_limitation_value'),
+                $this->handler->quoteColumn('id', 'ezpolicy_limitation')
+            )
+        )->where(
+            $query->expr->lAnd(
+                $query->expr->eq(
+                    $this->handler->quoteColumn('name', 'ezrole'),
+                    $query->bindValue($identifier, null, \PDO::PARAM_STR)
+                ),
+                $roleVersionCondition
+            )
+        );
+
+        $statement = $query->prepare();
+        $statement->execute();
+
+        return $statement->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Loads a role draft by the original role ID.
+     *
+     * @param mixed $roleId ID of the role the draft was created from.
+     *
+     * @return array
+     */
+    public function loadRoleDraftByRoleId($roleId)
     {
         $query = $this->handler->createSelectQuery();
         $query->select(
             $this->handler->aliasedColumn($query, 'id', 'ezrole'),
             $this->handler->aliasedColumn($query, 'name', 'ezrole'),
+            $this->handler->aliasedColumn($query, 'version', 'ezrole'),
             $this->handler->aliasedColumn($query, 'id', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'function_name', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'module_name', 'ezpolicy'),
+            $this->handler->aliasedColumn($query, 'original_id', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'identifier', 'ezpolicy_limitation'),
             $this->handler->aliasedColumn($query, 'value', 'ezpolicy_limitation_value')
         )->from(
@@ -164,8 +271,10 @@ class DoctrineDatabase extends Gateway
             )
         )->where(
             $query->expr->eq(
-                $this->handler->quoteColumn('name', 'ezrole'),
-                $query->bindValue($identifier, null, \PDO::PARAM_STR)
+                // Column name "version" is misleading as it stores originalId when creating a draft from an existing role.
+                // But hey, this is legacy! :-)
+                $this->handler->quoteColumn('version', 'ezrole'),
+                $query->bindValue($roleId, null, \PDO::PARAM_STR)
             )
         );
 
@@ -178,18 +287,34 @@ class DoctrineDatabase extends Gateway
     /**
      * Loads all roles.
      *
+     * @param int $status One of Role::STATUS_DEFINED|Role::STATUS_DRAFT
+     *
      * @return array
      */
-    public function loadRoles()
+    public function loadRoles($status = Role::STATUS_DEFINED)
     {
         $query = $this->handler->createSelectQuery();
+        if ($status === Role::STATUS_DEFINED) {
+            $roleVersionCondition = $query->expr->eq(
+                $this->handler->quoteColumn('version', 'ezrole'),
+                $query->bindValue($status, null, \PDO::PARAM_INT)
+            );
+        } else {
+            $roleVersionCondition = $query->expr->neq(
+                $this->handler->quoteColumn('version', 'ezrole'),
+                $query->bindValue($status, null, \PDO::PARAM_INT)
+            );
+        }
+
         $query->select(
             $this->handler->aliasedColumn($query, 'id', 'ezrole'),
             $this->handler->aliasedColumn($query, 'name', 'ezrole'),
+            $this->handler->aliasedColumn($query, 'version', 'ezrole'),
             $this->handler->aliasedColumn($query, 'contentobject_id', 'ezuser_role'),
             $this->handler->aliasedColumn($query, 'id', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'function_name', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'module_name', 'ezpolicy'),
+            $this->handler->aliasedColumn($query, 'original_id', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'identifier', 'ezpolicy_limitation'),
             $this->handler->aliasedColumn($query, 'value', 'ezpolicy_limitation_value')
         )->from(
@@ -218,7 +343,7 @@ class DoctrineDatabase extends Gateway
                 $this->handler->quoteColumn('limitation_id', 'ezpolicy_limitation_value'),
                 $this->handler->quoteColumn('id', 'ezpolicy_limitation')
             )
-        );
+        )->where($roleVersionCondition);
 
         $statement = $query->prepare();
         $statement->execute();
@@ -230,19 +355,34 @@ class DoctrineDatabase extends Gateway
      * Loads all roles associated with the given content objects.
      *
      * @param array $contentIds
+     * @param int $status One of Role::STATUS_DEFINED|Role::STATUS_DRAFT
      *
      * @return array
      */
-    public function loadRolesForContentObjects($contentIds)
+    public function loadRolesForContentObjects($contentIds, $status = Role::STATUS_DEFINED)
     {
         $query = $this->handler->createSelectQuery();
+        if ($status === Role::STATUS_DEFINED) {
+            $roleIdCondition = $query->expr->eq(
+                $this->handler->quoteColumn('id', 'ezrole'),
+                $this->handler->quoteColumn('role_id', 'ezuser_role_search')
+            );
+        } else {
+            $roleIdCondition = $query->expr->eq(
+                $this->handler->quoteColumn('version', 'ezrole'),
+                $this->handler->quoteColumn('role_id', 'ezuser_role_search')
+            );
+        }
+
         $query->select(
             $this->handler->aliasedColumn($query, 'contentobject_id', 'ezuser_role'),
             $this->handler->aliasedColumn($query, 'id', 'ezrole'),
             $this->handler->aliasedColumn($query, 'name', 'ezrole'),
+            $this->handler->aliasedColumn($query, 'version', 'ezrole'),
             $this->handler->aliasedColumn($query, 'id', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'function_name', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'module_name', 'ezpolicy'),
+            $this->handler->aliasedColumn($query, 'original_id', 'ezpolicy'),
             $this->handler->aliasedColumn($query, 'identifier', 'ezpolicy_limitation'),
             $this->handler->aliasedColumn($query, 'value', 'ezpolicy_limitation_value')
         )->from(
@@ -252,10 +392,7 @@ class DoctrineDatabase extends Gateway
             )
         )->leftJoin(
             $this->handler->quoteTable('ezrole'),
-            $query->expr->eq(
-                $this->handler->quoteColumn('id', 'ezrole'),
-                $this->handler->quoteColumn('role_id', 'ezuser_role_search')
-            )
+            $roleIdCondition
         )->leftJoin(
             $this->handler->quoteTable('ezuser_role'),
             $query->expr->eq(
@@ -294,6 +431,37 @@ class DoctrineDatabase extends Gateway
     }
 
     /**
+     * Loads role assignment for specified assignment ID.
+     *
+     * @param mixed $roleAssignmentId
+     *
+     * @return array
+     */
+    public function loadRoleAssignment($roleAssignmentId)
+    {
+        $query = $this->handler->createSelectQuery();
+        $query->select(
+            $this->handler->quoteColumn('id'),
+            $this->handler->quoteColumn('contentobject_id'),
+            $this->handler->quoteColumn('limit_identifier'),
+            $this->handler->quoteColumn('limit_value'),
+            $this->handler->quoteColumn('role_id')
+        )->from(
+            $this->handler->quoteTable('ezuser_role')
+        )->where(
+            $query->expr->eq(
+                $this->handler->quoteColumn('id'),
+                $query->bindValue($roleAssignmentId, null, \PDO::PARAM_INT)
+            )
+        );
+
+        $statement = $query->prepare();
+        $statement->execute();
+
+        return $statement->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Loads role assignments for specified content ID.
      *
      * @param mixed $groupId
@@ -305,6 +473,7 @@ class DoctrineDatabase extends Gateway
     {
         $query = $this->handler->createSelectQuery();
         $query->select(
+            $this->handler->quoteColumn('id'),
             $this->handler->quoteColumn('contentobject_id'),
             $this->handler->quoteColumn('limit_identifier'),
             $this->handler->quoteColumn('limit_value'),
@@ -348,6 +517,7 @@ class DoctrineDatabase extends Gateway
     {
         $query = $this->handler->createSelectQuery();
         $query->select(
+            $this->handler->quoteColumn('id'),
             $this->handler->quoteColumn('contentobject_id'),
             $this->handler->quoteColumn('limit_identifier'),
             $this->handler->quoteColumn('limit_value'),
@@ -453,11 +623,13 @@ class DoctrineDatabase extends Gateway
     }
 
     /**
-     * Update role.
+     * Update role (draft).
      *
      * Will not throw anything if location id is invalid.
      *
      * @param \eZ\Publish\SPI\Persistence\User\RoleUpdateStruct $role
+     *
+     * @return array
      */
     public function updateRole(RoleUpdateStruct $role)
     {
@@ -484,34 +656,111 @@ class DoctrineDatabase extends Gateway
     }
 
     /**
-     * Delete the specified role including all of its assignments.
+     * Delete the specified role (draft).
+     * If it's not a draft, the role assignments will also be deleted.
      *
      * @param mixed $roleId
+     * @param int $status One of Role::STATUS_DEFINED|Role::STATUS_DRAFT
      */
-    public function deleteRole($roleId)
+    public function deleteRole($roleId, $status = Role::STATUS_DEFINED)
     {
-        $deleteAssignmentsQuery = $this->handler->createDeleteQuery();
-        $deleteAssignmentsQuery
-            ->deleteFrom($this->handler->quoteTable('ezuser_role'))
-            ->where(
-                $deleteAssignmentsQuery->expr->eq(
-                    $this->handler->quoteColumn('role_id'),
-                    $deleteAssignmentsQuery->bindValue($roleId, null, \PDO::PARAM_INT)
-                )
-            );
-
         $deleteRoleQuery = $this->handler->createDeleteQuery();
+        if ($status !== Role::STATUS_DRAFT) {
+            $deleteAssignmentsQuery = $this->handler->createDeleteQuery();
+            $deleteAssignmentsQuery
+                ->deleteFrom($this->handler->quoteTable('ezuser_role'))
+                ->where(
+                    $deleteAssignmentsQuery->expr->eq(
+                        $this->handler->quoteColumn('role_id'),
+                        $deleteAssignmentsQuery->bindValue($roleId, null, \PDO::PARAM_INT)
+                    )
+                );
+
+            $draftCondition = $deleteRoleQuery->expr->eq(
+                $this->handler->quoteColumn('version', 'ezrole'),
+                $deleteRoleQuery->bindValue(Role::STATUS_DEFINED, null, \PDO::PARAM_INT)
+            );
+        } else {
+            $draftCondition = $deleteRoleQuery->expr->neq(
+                $this->handler->quoteColumn('version', 'ezrole'),
+                $deleteRoleQuery->bindValue(Role::STATUS_DEFINED, null, \PDO::PARAM_INT)
+            );
+        }
+
         $deleteRoleQuery
             ->deleteFrom($this->handler->quoteTable('ezrole'))
             ->where(
-                $deleteRoleQuery->expr->eq(
-                    $this->handler->quoteColumn('id'),
-                    $deleteRoleQuery->bindValue($roleId, null, \PDO::PARAM_INT)
+                $deleteRoleQuery->expr->lAnd(
+                    $deleteRoleQuery->expr->eq(
+                        $this->handler->quoteColumn('id'),
+                        $deleteRoleQuery->bindValue($roleId, null, \PDO::PARAM_INT)
+                    ),
+                    $draftCondition
                 )
             );
 
-        $deleteAssignmentsQuery->prepare()->execute();
+        if ($status !== Role::STATUS_DRAFT) {
+            $deleteAssignmentsQuery->prepare()->execute();
+        }
         $deleteRoleQuery->prepare()->execute();
+    }
+
+    /**
+     * Publish the specified role draft.
+     * If the draft was created from an existing role, published version will take the original role ID.
+     *
+     * @param mixed $roleDraftId
+     * @param mixed|null $originalRoleId ID of role the draft was created from. Will be null if the role draft was completely new.
+     */
+    public function publishRoleDraft($roleDraftId, $originalRoleId = null)
+    {
+        $query = $this->handler->createUpdateQuery();
+        $query
+            ->update($this->handler->quoteTable('ezrole'))
+            ->set(
+                $this->handler->quoteColumn('version'),
+                $query->bindValue(Role::STATUS_DEFINED, null, \PDO::PARAM_INT)
+            );
+        // Draft was created from an existing role, so published role must get the original ID.
+        if ($originalRoleId !== null) {
+            $query->set(
+                $this->handler->quoteColumn('id'),
+                $query->bindValue($originalRoleId, null, \PDO::PARAM_INT)
+            );
+        }
+
+        $query->where(
+            $query->expr->eq(
+                $this->handler->quoteColumn('id'),
+                $query->bindValue($roleDraftId, null, \PDO::PARAM_INT)
+            )
+        );
+        $statement = $query->prepare();
+        $statement->execute();
+
+        $policyQuery = $this->handler->createUpdateQuery();
+        $policyQuery
+            ->update($this->handler->quoteTable('ezpolicy'))
+            ->set(
+                $this->handler->quoteColumn('original_id'),
+                $policyQuery->bindValue(0, null, \PDO::PARAM_INT)
+            );
+        // Draft was created from an existing role, so published policies must get the original role ID.
+        if ($originalRoleId !== null) {
+            $policyQuery->set(
+                $this->handler->quoteColumn('role_id'),
+                $policyQuery->bindValue($originalRoleId, null, \PDO::PARAM_INT)
+            );
+        }
+
+        $policyQuery->where(
+            $policyQuery->expr->eq(
+                $this->handler->quoteColumn('role_id'),
+                $policyQuery->bindValue($roleDraftId, null, \PDO::PARAM_INT)
+            )
+        );
+        $queryStatement = $policyQuery->prepare();
+        $queryStatement->execute();
     }
 
     /**
@@ -519,6 +768,8 @@ class DoctrineDatabase extends Gateway
      *
      * @param mixed $roleId
      * @param \eZ\Publish\SPI\Persistence\User\Policy $policy
+     *
+     * @return Policy
      */
     public function addPolicy($roleId, Policy $policy)
     {
@@ -536,7 +787,7 @@ class DoctrineDatabase extends Gateway
                 $query->bindValue($policy->module)
             )->set(
                 $this->handler->quoteColumn('original_id'),
-                0
+                $query->bindValue($policy->originalId ?: 0, null, \PDO::PARAM_INT)
             )->set(
                 $this->handler->quoteColumn('role_id'),
                 $query->bindValue($roleId, null, \PDO::PARAM_INT)

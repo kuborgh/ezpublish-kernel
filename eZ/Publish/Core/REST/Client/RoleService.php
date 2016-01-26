@@ -8,19 +8,22 @@
  *
  * @version //autogentag//
  */
-
 namespace eZ\Publish\Core\REST\Client;
 
 use eZ\Publish\API\Repository\RoleService as APIRoleService;
 use eZ\Publish\API\Repository\Values\User\Limitation\RoleLimitation;
 use eZ\Publish\API\Repository\Values\User\Policy as APIPolicy;
 use eZ\Publish\API\Repository\Values\User\PolicyCreateStruct as APIPolicyCreateStruct;
+use eZ\Publish\API\Repository\Values\User\PolicyDraft;
 use eZ\Publish\API\Repository\Values\User\PolicyUpdateStruct as APIPolicyUpdateStruct;
 use eZ\Publish\API\Repository\Values\User\Role as APIRole;
+use eZ\Publish\API\Repository\Values\User\RoleAssignment as APIRoleAssignment;
+use eZ\Publish\API\Repository\Values\User\RoleDraft as APIRoleDraft;
 use eZ\Publish\API\Repository\Values\User\RoleCreateStruct as APIRoleCreateStruct;
 use eZ\Publish\API\Repository\Values\User\RoleUpdateStruct;
 use eZ\Publish\API\Repository\Values\User\User;
 use eZ\Publish\API\Repository\Values\User\UserGroup;
+use eZ\Publish\Core\Repository\Values\User\RoleDraft;
 use eZ\Publish\Core\Repository\Values\User\UserRoleAssignment;
 use eZ\Publish\Core\Repository\Values\User\UserGroupRoleAssignment;
 use eZ\Publish\Core\REST\Client\Values\User\PolicyCreateStruct;
@@ -99,7 +102,160 @@ class RoleService implements APIRoleService, Sessionable
     }
 
     /**
-     * Creates a new Role.
+     * Creates a new RoleDraft for existing Role.
+     *
+     * @since 6.0
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to create a role
+     * @throws \eZ\Publish\API\Repository\Exceptions\InvalidArgumentException if the Role already has a Role Draft that will need to be removed first
+     * @throws \eZ\Publish\API\Repository\Exceptions\LimitationValidationException if a policy limitation in the $roleCreateStruct is not valid
+     *
+     * @param \eZ\Publish\API\Repository\Values\User\Role $role
+     *
+     * @return \eZ\Publish\API\Repository\Values\User\RoleDraft
+     */
+    public function createRoleDraft(APIRole $role)
+    {
+        //TODO
+    }
+
+    /**
+     * Loads a role for the given id.
+     *
+     * @since 6.0
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to read this role
+     * @throws \eZ\Publish\API\Repository\Exceptions\NotFoundException if a role with the given id was not found
+     *
+     * @param mixed $id
+     *
+     * @return \eZ\Publish\API\Repository\Values\User\RoleDraft
+     */
+    public function loadRoleDraft($id)
+    {
+        //TODO
+    }
+
+    /**
+     * Loads a RoleDraft by the ID of the role it was created from.
+     *
+     * @param mixed $roleId ID of the role the draft was created from.
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to read this role
+     * @throws \eZ\Publish\API\Repository\Exceptions\NotFoundException if a RoleDraft with the given id was not found
+     *
+     * @return \eZ\Publish\API\Repository\Values\User\RoleDraft
+     */
+    public function loadRoleDraftByRoleId($roleId)
+    {
+        // TODO
+    }
+
+    /**
+     * Updates the properties of a role draft.
+     *
+     * @since 6.0
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to update a role
+     * @throws \eZ\Publish\API\Repository\Exceptions\InvalidArgumentException if the identifier of the role already exists
+     *
+     * @param \eZ\Publish\API\Repository\Values\User\RoleDraft $roleDraft
+     * @param \eZ\Publish\API\Repository\Values\User\RoleUpdateStruct $roleUpdateStruct
+     *
+     * @return \eZ\Publish\API\Repository\Values\User\RoleDraft
+     */
+    public function updateRoleDraft(APIRoleDraft $roleDraft, RoleUpdateStruct $roleUpdateStruct)
+    {
+        //TODO
+    }
+
+    /**
+     * Adds a new policy to the role draft.
+     *
+     * @since 6.0
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to add  a policy
+     * @throws \eZ\Publish\API\Repository\Exceptions\InvalidArgumentException if limitation of the same type is repeated in policy create
+     *                                                                        struct or if limitation is not allowed on module/function
+     * @throws \eZ\Publish\API\Repository\Exceptions\LimitationValidationException if a limitation in the $policyCreateStruct is not valid
+     *
+     * @param \eZ\Publish\API\Repository\Values\User\RoleDraft $roleDraft
+     * @param \eZ\Publish\API\Repository\Values\User\PolicyCreateStruct $policyCreateStruct
+     *
+     * @return \eZ\Publish\API\Repository\Values\User\RoleDraft
+     */
+    public function addPolicyByRoleDraft(APIRoleDraft $roleDraft, APIPolicyCreateStruct $policyCreateStruct)
+    {
+        //TODO
+    }
+
+    /**
+     * Removes a policy from a role draft.
+     *
+     * @since 6.0
+     *
+     *
+     * @param \eZ\Publish\API\Repository\Values\User\RoleDraft $roleDraft
+     * @param PolicyDraft $policyDraft the policy to remove from the role
+     * @return APIRoleDraft if the authenticated user is not allowed to remove a policy
+     */
+    public function removePolicyByRoleDraft(APIRoleDraft $roleDraft, PolicyDraft $policyDraft)
+    {
+        //TODO
+    }
+
+    /**
+     * Updates the limitations of a policy. The module and function cannot be changed and
+     * the limitations are replaced by the ones in $roleUpdateStruct.
+     *
+     * @since 6.0
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to update a policy
+     * @throws \eZ\Publish\API\Repository\Exceptions\InvalidArgumentException if limitation of the same type is repeated in policy update
+     *                                                                        struct or if limitation is not allowed on module/function
+     * @throws \eZ\Publish\API\Repository\Exceptions\LimitationValidationException if a limitation in the $policyUpdateStruct is not valid
+     *
+     * @param \eZ\Publish\API\Repository\Values\User\RoleDraft $roleDraft
+     * @param \eZ\Publish\API\Repository\Values\User\PolicyDraft $policy
+     * @param \eZ\Publish\API\Repository\Values\User\PolicyUpdateStruct $policyUpdateStruct
+     *
+     * @return \eZ\Publish\API\Repository\Values\User\PolicyDraft
+     */
+    public function updatePolicyByRoleDraft(APIRoleDraft $roleDraft, PolicyDraft $policy, APIPolicyUpdateStruct $policyUpdateStruct)
+    {
+        //TODO
+    }
+
+    /**
+     * Deletes the given role.
+     *
+     * @since 6.0
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to delete this role
+     *
+     * @param \eZ\Publish\API\Repository\Values\User\RoleDraft $roleDraft
+     */
+    public function deleteRoleDraft(APIRoleDraft $roleDraft)
+    {
+        //TODO
+    }
+
+    /**
+     * Publishes a given Role draft.
+     *
+     * @since 6.0
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to delete this role
+     *
+     * @param \eZ\Publish\API\Repository\Values\User\RoleDraft $roleDraft
+     */
+    public function publishRoleDraft(APIRoleDraft $roleDraft)
+    {
+        //TODO
+    }
+
+    /**
+     * Creates a new Role draft.
      *
      * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to create a role
      * @throws \eZ\Publish\API\Repository\Exceptions\InvalidArgumentException if the name of the role already exists or if limitation of the
@@ -109,7 +265,7 @@ class RoleService implements APIRoleService, Sessionable
      *
      * @param \eZ\Publish\API\Repository\Values\User\RoleCreateStruct $roleCreateStruct
      *
-     * @return \eZ\Publish\API\Repository\Values\User\Role
+     * @return \eZ\Publish\API\Repository\Values\User\RoleDraft
      */
     public function createRole(APIRoleCreateStruct $roleCreateStruct)
     {
@@ -150,7 +306,7 @@ class RoleService implements APIRoleService, Sessionable
             $createdPolicies[] = $createdPolicy;
         }
 
-        return new Role(
+        return new RoleDraft(
             array(
                 'id' => $createdRole->id,
                 'identifier' => $createdRole->identifier,
@@ -161,6 +317,8 @@ class RoleService implements APIRoleService, Sessionable
 
     /**
      * Updates the name of the role.
+     *
+     * @deprecated since 6.0, use {@see updateRoleDraft}
      *
      * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to update a role
      * @throws \eZ\Publish\API\Repository\Exceptions\InvalidArgumentException if the name of the role already exists
@@ -187,6 +345,8 @@ class RoleService implements APIRoleService, Sessionable
 
     /**
      * Adds a new policy to the role.
+     *
+     * @deprecated since 6.0, use {@see addPolicyByRoleDraft}
      *
      * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to add  a policy
      * @throws \eZ\Publish\API\Repository\Exceptions\InvalidArgumentException if limitation of the same type is repeated in policy create
@@ -235,9 +395,9 @@ class RoleService implements APIRoleService, Sessionable
     }
 
     /**
-     * removes a policy from the role.
+     * Removes a policy from the role.
      *
-     * @deprecated since 5.3, use {@link deletePolicy()} instead.
+     * @deprecated since 5.3, use {@link removePolicyByRoleDraft()} instead.
      *
      * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to remove a policy
      * @throws \eZ\Publish\API\Repository\Exceptions\InvalidArgumentException if policy does not belong to the given role
@@ -278,6 +438,8 @@ class RoleService implements APIRoleService, Sessionable
     /**
      * Deletes a policy.
      *
+     * @deprecated since 6.0, use {@link removePolicyByRoleDraft()} instead.
+     *
      * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to remove a policy
      *
      * @param \eZ\Publish\API\Repository\Values\User\Policy $policy the policy to delete
@@ -290,6 +452,8 @@ class RoleService implements APIRoleService, Sessionable
     /**
      * Updates the limitations of a policy. The module and function cannot be changed and
      * the limitations are replaced by the ones in $roleUpdateStruct.
+     *
+     * @deprecated since 6.0, use {@link updatePolicyByRoleDraft()} instead.
      *
      * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to update a policy
      * @throws \eZ\Publish\API\Repository\Exceptions\InvalidArgumentException if limitation of the same type is repeated in policy update
@@ -588,6 +752,33 @@ class RoleService implements APIRoleService, Sessionable
         if (!empty($response->body)) {
             $this->inputDispatcher->parse($response);
         }
+    }
+
+    /**
+     * Removes the given role assignment.
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to remove a role assignment
+     *
+     * @param \eZ\Publish\API\Repository\Values\User\RoleAssignment $roleAssignment
+     */
+    public function removeRoleAssignment(APIRoleAssignment $roleAssignment)
+    {
+        throw new \Exception('@todo: Implement.');
+    }
+
+    /**
+     * Loads a user assignment for the given id.
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\UnauthorizedException if the authenticated user is not allowed to read this role
+     * @throws \eZ\Publish\API\Repository\Exceptions\NotFoundException If the role assignment was not found
+     *
+     * @param mixed $roleAssignmentId
+     *
+     * @return \eZ\Publish\API\Repository\Values\User\RoleAssignment
+     */
+    public function loadRoleAssignment($roleAssignmentId)
+    {
+        throw new \Exception('@todo: Implement.');
     }
 
     /**

@@ -13,8 +13,10 @@ namespace eZ\Publish\Core\Persistence\Legacy\User;
 use eZ\Publish\SPI\Persistence\User;
 use eZ\Publish\SPI\Persistence\User\Handler as BaseUserHandler;
 use eZ\Publish\SPI\Persistence\User\Role;
+use eZ\Publish\SPI\Persistence\User\RoleCreateStruct;
 use eZ\Publish\SPI\Persistence\User\RoleUpdateStruct;
 use eZ\Publish\SPI\Persistence\User\Policy;
+use eZ\Publish\Core\Persistence\Legacy\Exception\RoleNotFound;
 use eZ\Publish\Core\Persistence\Legacy\User\Role\Gateway as RoleGateway;
 use eZ\Publish\Core\Persistence\Legacy\User\Role\LimitationConverter;
 use eZ\Publish\Core\Base\Exceptions\NotFoundException as NotFound;
@@ -88,6 +90,8 @@ class Handler implements BaseUserHandler
      * Loads user with user ID.
      *
      * @param mixed $userId
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\NotFoundException If user is not found
      *
      * @return \eZ\Publish\SPI\Persistence\User
      */
@@ -166,38 +170,83 @@ class Handler implements BaseUserHandler
     }
 
     /**
-     * Create new role.
+     * Create new role draft.
      *
-     * @param \eZ\Publish\SPI\Persistence\User\Role $role
+     * Sets status to Role::STATUS_DRAFT on the new returned draft.
+     *
+     * @param \eZ\Publish\SPI\Persistence\User\RoleCreateStruct $createStruct
      *
      * @return \eZ\Publish\SPI\Persistence\User\Role
      */
-    public function createRole(Role $role)
+    public function createRole(RoleCreateStruct $createStruct)
     {
+        return $this->internalCreateRole($createStruct);
+    }
+
+    /**
+     * Creates a draft of existing defined role.
+     *
+     * Sets status to Role::STATUS_DRAFT on the new returned draft.
+     *
+     * @param mixed $roleId
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\NotFoundException If role with defined status is not found
+     *
+     * @return \eZ\Publish\SPI\Persistence\User\Role
+     */
+    public function createRoleDraft($roleId)
+    {
+        $createStruct = $this->mapper->createCreateStructFromRole(
+            $this->loadRole($roleId)
+        );
+
+        return $this->internalCreateRole($createStruct, $roleId);
+    }
+
+    /**
+     * Internal method for creating Role.
+     *
+     * Used by self::createRole() and self::createRoleDraft()
+     *
+     * @param \eZ\Publish\SPI\Persistence\User\RoleCreateStruct $createStruct
+     * @param mixed|null $roleId Used by self::createRoleDraft() to retain Role id in the draft
+     *
+     * @return \eZ\Publish\SPI\Persistence\User\Role
+     */
+    protected function internalCreateRole(RoleCreateStruct $createStruct, $roleId = null)
+    {
+        $createStruct = clone $createStruct;
+        $role = $this->mapper->createRoleFromCreateStruct(
+            $createStruct
+        );
+        $role->id = $roleId;
+        $role->status = Role::STATUS_DRAFT;
+
         $this->roleGateway->createRole($role);
 
         foreach ($role->policies as $policy) {
-            $this->addPolicy($role->id, $policy);
+            $this->addPolicyByRoleDraft($role->id, $policy);
         }
 
         return $role;
     }
 
     /**
-     * Loads a specified role by $roleId.
+     * Loads a specified role (draft) by $roleId and $status.
      *
      * @param mixed $roleId
+     * @param int $status One of Role::STATUS_DEFINED|Role::STATUS_DRAFT
      *
-     * @throws \eZ\Publish\API\Repository\Exceptions\NotFoundException If role is not found
+     * @throws \eZ\Publish\API\Repository\Exceptions\NotFoundException If role with given status does not exist
      *
      * @return \eZ\Publish\SPI\Persistence\User\Role
      */
-    public function loadRole($roleId)
+    public function loadRole($roleId, $status = Role::STATUS_DEFINED)
     {
-        $data = $this->roleGateway->loadRole($roleId);
+        $data = $this->roleGateway->loadRole($roleId, $status);
 
         if (empty($data)) {
-            throw new NotFound('role', $roleId);
+            throw new RoleNotFound($roleId, $status);
         }
 
         $role = $this->mapper->mapRole($data);
@@ -209,20 +258,46 @@ class Handler implements BaseUserHandler
     }
 
     /**
-     * Loads a specified role by $identifier.
+     * Loads a specified role (draft) by $identifier and $status.
      *
      * @param string $identifier
+     * @param int $status One of Role::STATUS_DEFINED|Role::STATUS_DRAFT
      *
      * @throws \eZ\Publish\API\Repository\Exceptions\NotFoundException If role is not found
      *
      * @return \eZ\Publish\SPI\Persistence\User\Role
      */
-    public function loadRoleByIdentifier($identifier)
+    public function loadRoleByIdentifier($identifier, $status = Role::STATUS_DEFINED)
     {
-        $data = $this->roleGateway->loadRoleByIdentifier($identifier);
+        $data = $this->roleGateway->loadRoleByIdentifier($identifier, $status);
 
         if (empty($data)) {
-            throw new NotFound('role', $identifier);
+            throw new RoleNotFound($identifier, $status);
+        }
+
+        $role = $this->mapper->mapRole($data);
+        foreach ($role->policies as $policy) {
+            $this->limitationConverter->toSPI($policy);
+        }
+
+        return $role;
+    }
+
+    /**
+     * Loads a role draft by the original role ID.
+     *
+     * @param mixed $roleId ID of the role the draft was created from.
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\NotFoundException If role is not found
+     *
+     * @return \eZ\Publish\SPI\Persistence\User\Role
+     */
+    public function loadRoleDraftByRoleId($roleId)
+    {
+        $data = $this->roleGateway->loadRoleDraftByRoleId($roleId);
+
+        if (empty($data)) {
+            throw new RoleNotFound($roleId, Role::STATUS_DRAFT);
         }
 
         $role = $this->mapper->mapRole($data);
@@ -253,7 +328,7 @@ class Handler implements BaseUserHandler
     }
 
     /**
-     * Update role.
+     * Update role (draft).
      *
      * @param \eZ\Publish\SPI\Persistence\User\RoleUpdateStruct $role
      */
@@ -263,19 +338,75 @@ class Handler implements BaseUserHandler
     }
 
     /**
-     * Delete the specified role.
+     * Delete the specified role (draft).
      *
      * @param mixed $roleId
+     * @param int $status One of Role::STATUS_DEFINED|Role::STATUS_DRAFT
      */
-    public function deleteRole($roleId)
+    public function deleteRole($roleId, $status = Role::STATUS_DEFINED)
     {
-        $role = $this->loadRole($roleId);
+        $role = $this->loadRole($roleId, $status);
 
         foreach ($role->policies as $policy) {
             $this->roleGateway->removePolicy($policy->id);
         }
 
-        $this->roleGateway->deleteRole($role->id);
+        $this->roleGateway->deleteRole($role->id, $status);
+    }
+
+    /**
+     * Publish the specified role draft.
+     *
+     * @param mixed $roleDraftId
+     */
+    public function publishRoleDraft($roleDraftId)
+    {
+        $roleDraft = $this->loadRole($roleDraftId, Role::STATUS_DRAFT);
+
+        try {
+            $originalRoleId = $roleDraft->originalId;
+            $role = $this->loadRole($originalRoleId);
+            $roleAssignments = $this->loadRoleAssignmentsByRoleId($role->id);
+            $this->deleteRole($role->id);
+
+            foreach ($roleAssignments as $roleAssignment) {
+                if (empty($roleAssignment->limitationIdentifier)) {
+                    $this->assignRole($roleAssignment->contentId, $originalRoleId);
+                } else {
+                    $this->assignRole(
+                        $roleAssignment->contentId,
+                        $originalRoleId,
+                        [$roleAssignment->limitationIdentifier => $roleAssignment->values]
+                    );
+                }
+            }
+            $this->roleGateway->publishRoleDraft($roleDraft->id, $role->id);
+        } catch (NotFound $e) {
+            // If no published role is found, only publishing is needed, without specifying original role ID as there is none.
+            $this->roleGateway->publishRoleDraft($roleDraft->id);
+        }
+    }
+
+    /**
+     * Adds a policy to a role draft.
+     *
+     * @param mixed $roleId
+     * @param \eZ\Publish\SPI\Persistence\User\Policy $policy
+     *
+     * @return \eZ\Publish\SPI\Persistence\User\Policy
+     */
+    public function addPolicyByRoleDraft($roleId, Policy $policy)
+    {
+        $legacyPolicy = clone $policy;
+        $legacyPolicy->originalId = $policy->id;
+        $this->limitationConverter->toLegacy($legacyPolicy);
+
+        $this->roleGateway->addPolicy($roleId, $legacyPolicy);
+        $policy->id = $legacyPolicy->id;
+        $policy->originalId = $legacyPolicy->originalId;
+        $policy->roleId = $legacyPolicy->roleId;
+
+        return $policy;
     }
 
     /**
@@ -311,7 +442,7 @@ class Handler implements BaseUserHandler
         $this->limitationConverter->toLegacy($policy);
 
         $this->roleGateway->removePolicyLimitations($policy->id);
-        $this->roleGateway->addPolicyLimitations($policy->id, $policy->limitations);
+        $this->roleGateway->addPolicyLimitations($policy->id, $policy->limitations === '*' ? array() : $policy->limitations);
     }
 
     /**
@@ -381,9 +512,39 @@ class Handler implements BaseUserHandler
      * @param mixed $contentId The user or user group Id to un-assign the role from.
      * @param mixed $roleId
      */
-    public function unAssignRole($contentId, $roleId)
+    public function unassignRole($contentId, $roleId)
     {
         $this->userGateway->removeRole($contentId, $roleId);
+    }
+
+    /**
+     * Un-assign a role by assignment ID.
+     *
+     * @param mixed $roleAssignmentId The assignment ID.
+     */
+    public function removeRoleAssignment($roleAssignmentId)
+    {
+        $this->userGateway->removeRoleAssignmentById($roleAssignmentId);
+    }
+
+    /**
+     * Loads role assignment for specified assignment ID.
+     *
+     * @param mixed $roleAssignmentId
+     *
+     * @throws \eZ\Publish\API\Repository\Exceptions\NotFoundException If role assignment is not found
+     *
+     * @return \eZ\Publish\SPI\Persistence\User\RoleAssignment
+     */
+    public function loadRoleAssignment($roleAssignmentId)
+    {
+        $data = $this->roleGateway->loadRoleAssignment($roleAssignmentId);
+
+        if (empty($data)) {
+            throw new NotFound('roleAssignment', $roleAssignmentId);
+        }
+
+        return $this->mapper->mapRoleAssignments($data)[0];
     }
 
     /**

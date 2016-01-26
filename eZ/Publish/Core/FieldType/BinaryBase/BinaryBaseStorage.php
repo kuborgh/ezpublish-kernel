@@ -19,6 +19,8 @@ use eZ\Publish\SPI\Persistence\Content\VersionInfo;
 
 /**
  * Storage for binary files.
+ *
+ * @method \eZ\Publish\Core\FieldType\BinaryBase\BinaryBaseStorage\Gateway getGateway(array $context)
  */
 class BinaryBaseStorage extends GatewayBasedStorage
 {
@@ -65,34 +67,23 @@ class BinaryBaseStorage extends GatewayBasedStorage
     public function storeFieldData(VersionInfo $versionInfo, Field $field, array $context)
     {
         if ($field->value->externalData === null) {
-            // Nothing to store
+            $this->deleteFieldData($versionInfo, [$field->id], $context);
+
             return false;
         }
 
-        // no mimeType means we are dealing with an input, local file
-        if (!isset($field->value->externalData['mimeType'])) {
-            $field->value->externalData['mimeType'] =
-                $this->mimeTypeDetector->getFromPath($field->value->externalData['inputUri']);
-        }
-
-        $storedValue = $field->value->externalData;
-
-        // The file referenced in externalData MAY be an existing IOService file which we can use
-        if ($storedValue['id'] === null) {
-            $createStruct = $this->IOService->newBinaryCreateStructFromLocalFile(
-                $storedValue['inputUri']
-            );
-            $storagePath = $this->pathGenerator->getStoragePathForField($field, $versionInfo);
-            $createStruct->id = $storagePath;
+        if (isset($field->value->externalData['inputUri'])) {
+            $field->value->externalData['mimeType'] = $this->mimeTypeDetector->getFromPath($field->value->externalData['inputUri']);
+            $createStruct = $this->IOService->newBinaryCreateStructFromLocalFile($field->value->externalData['inputUri']);
+            $createStruct->id = $this->pathGenerator->getStoragePathForField($field, $versionInfo);
             $binaryFile = $this->IOService->createBinaryFile($createStruct);
-            $storedValue['id'] = $binaryFile->id;
-            $storedValue['mimeType'] = $createStruct->mimeType;
-            $storedValue['uri'] = isset($this->downloadUrlGenerator) ?
+
+            $field->value->externalData['id'] = $binaryFile->id;
+            $field->value->externalData['mimeType'] = $createStruct->mimeType;
+            $field->value->externalData['uri'] = isset($this->downloadUrlGenerator) ?
                 $this->downloadUrlGenerator->getStoragePathForField($field, $versionInfo) :
                 $binaryFile->uri;
         }
-
-        $field->value->externalData = $storedValue;
 
         $this->removeOldFile($field->id, $versionInfo->versionNo, $context);
 

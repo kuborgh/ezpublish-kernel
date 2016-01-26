@@ -10,17 +10,16 @@
  */
 namespace eZ\Publish\Core\REST\Server\Input\Parser;
 
-use eZ\Publish\Core\REST\Server\Input\Parser\Criterion as CriterionParser;
 use eZ\Publish\Core\REST\Common\Input\ParsingDispatcher;
 use eZ\Publish\Core\REST\Common\Exceptions;
 use eZ\Publish\API\Repository\Values\Content\Query;
 use eZ\Publish\Core\REST\Server\Values\RestViewInput;
-use eZ\Publish\API\Repository\Values\Content\Query\Criterion\LogicalAnd as LogicalAndCriterion;
+use eZ\Publish\Core\REST\Common\Input\BaseParser;
 
 /**
  * Parser for ViewInput.
  */
-class ViewInput extends CriterionParser
+class ViewInput extends BaseParser
 {
     /**
      * Parses input structure to a RestViewInput struct.
@@ -47,46 +46,7 @@ class ViewInput extends CriterionParser
             throw new Exceptions\Parser('Missing <Query> attribute for <ViewInput>.');
         }
 
-        $query = new Query();
-        $queryData = $data['Query'];
-
-        // Criteria
-        // -- FullTextCriterion
-        if (array_key_exists('Criteria', $queryData) && is_array($queryData['Criteria'])) {
-            $criteria = array();
-            foreach ($queryData['Criteria'] as $criterionName => $criterionData) {
-                $criteria[] = $this->dispatchCriterion($criterionName, $criterionData, $parsingDispatcher);
-            }
-
-            if (count($criteria) === 1) {
-                $query->filter = $criteria[0];
-            } else {
-                $query->filter = new LogicalAndCriterion($criteria);
-            }
-        }
-
-        // limit
-        if (array_key_exists('limit', $queryData)) {
-            $query->limit = (int)$queryData['limit'];
-        }
-
-        // offset
-        if (array_key_exists('offset', $queryData)) {
-            $query->offset = (int)$queryData['offset'];
-        }
-
-        // SortClauses
-        // -- SortClause
-        // ---- SortField
-        if (array_key_exists('SortClauses', $queryData)) {
-        }
-
-        // FacetBuilders
-        // -- contentTypeFacetBuilder
-        if (array_key_exists('FacetBuilders', $queryData)) {
-        }
-
-        $restViewInput->query = $query;
+        $restViewInput->query = $parsingDispatcher->parse($data['Query'], 'application/vnd.ez.api.internal.ContentQuery');
 
         return $restViewInput;
     }

@@ -12,6 +12,7 @@ namespace eZ\Publish\Core\Persistence\Legacy\User;
 
 use eZ\Publish\SPI\Persistence\User;
 use eZ\Publish\SPI\Persistence\User\Role;
+use eZ\Publish\SPI\Persistence\User\RoleCreateStruct;
 use eZ\Publish\SPI\Persistence\User\Policy;
 use eZ\Publish\SPI\Persistence\User\RoleAssignment;
 
@@ -73,12 +74,19 @@ class Mapper
         $policies = array();
         foreach ($data as $row) {
             $policyId = $row['ezpolicy_id'];
-            if (!isset($policies[$policyId]) &&
-                 ($policyId !== null)) {
+            if (!isset($policies[$policyId]) && ($policyId !== null)) {
+                $originalId = null;
+                if ($row['ezpolicy_original_id']) {
+                    $originalId = (int)$row['ezpolicy_original_id'];
+                } elseif ($row['ezrole_version']) {
+                    $originalId = (int)$policyId;
+                }
+
                 $policies[$policyId] = new Policy(
                     array(
-                        'id' => $row['ezpolicy_id'],
-                        'roleId' => $row['ezrole_id'],
+                        'id' => (int)$policyId,
+                        'roleId' => (int)$row['ezrole_id'],
+                        'originalId' => $originalId,
                         'module' => $row['ezpolicy_module_name'],
                         'function' => $row['ezpolicy_function_name'],
                         'limitations' => '*', // limitations must be '*' if not a non empty array of limitations
@@ -117,6 +125,8 @@ class Mapper
             if (empty($role->id)) {
                 $role->id = (int)$row['ezrole_id'];
                 $role->identifier = $row['ezrole_name'];
+                $role->status = $row['ezrole_version'] != 0 ? Role::STATUS_DRAFT : Role::STATUS_DEFINED;
+                $role->originalId = $row['ezrole_version'] ? (int)$row['ezrole_version'] : Role::STATUS_DEFINED;
                 // skip name and description as they don't exist in legacy
             }
         }
@@ -159,6 +169,7 @@ class Mapper
     {
         $roleAssignmentData = array();
         foreach ($data as $row) {
+            $id = (int)$row['id'];
             $roleId = (int)$row['role_id'];
             $contentId = (int)$row['contentobject_id'];
              // if user already have full access to a role, continue
@@ -169,21 +180,19 @@ class Mapper
 
             $limitIdentifier = $row['limit_identifier'];
             if (!empty($limitIdentifier)) {
-                if (!isset($roleAssignmentData[$roleId][$contentId][$limitIdentifier])) {
-                    $roleAssignmentData[$roleId][$contentId][$limitIdentifier] = new RoleAssignment(
-                        array(
-                            'roleId' => $roleId,
-                            'contentId' => $contentId,
-                            'limitationIdentifier' => $limitIdentifier,
-                            'values' => array($row['limit_value']),
-                        )
-                    );
-                } else {
-                    $roleAssignmentData[$roleId][$contentId][$limitIdentifier]->values[] = $row['limit_value'];
-                }
+                $roleAssignmentData[$roleId][$contentId][$limitIdentifier][$id] = new RoleAssignment(
+                    array(
+                        'id' => $id,
+                        'roleId' => $roleId,
+                        'contentId' => $contentId,
+                        'limitationIdentifier' => $limitIdentifier,
+                        'values' => array($row['limit_value']),
+                    )
+                );
             } else {
                 $roleAssignmentData[$roleId][$contentId] = new RoleAssignment(
                     array(
+                        'id' => $id,
                         'roleId' => $roleId,
                         'contentId' => $contentId,
                     )
@@ -200,5 +209,40 @@ class Mapper
         );
 
         return $roleAssignments;
+    }
+
+    /**
+     * Creates a create struct from an existing $role.
+     *
+     * @param \eZ\Publish\SPI\Persistence\User\Role $role
+     *
+     * @return \eZ\Publish\SPI\Persistence\User\RoleCreateStruct
+     */
+    public function createCreateStructFromRole(Role $role)
+    {
+        $createStruct = new RoleCreateStruct();
+
+        $createStruct->identifier = $role->identifier;
+        $createStruct->policies = $role->policies;
+
+        return $createStruct;
+    }
+
+    /**
+     * Maps properties from $struct to $role.
+     *
+     * @param \eZ\Publish\SPI\Persistence\User\RoleCreateStruct $createStruct
+     *
+     * @return \eZ\Publish\SPI\Persistence\User\Role
+     */
+    public function createRoleFromCreateStruct(RoleCreateStruct $createStruct)
+    {
+        $role = new Role();
+
+        $role->identifier = $createStruct->identifier;
+        $role->policies = $createStruct->policies;
+        $role->status = Role::STATUS_DRAFT;
+
+        return $role;
     }
 }

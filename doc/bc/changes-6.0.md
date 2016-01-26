@@ -158,11 +158,82 @@ Changes affecting version compatibility with former or future versions.
 * `eZ\Publish\API\Repository\Values\ValueObject\SearchHit` has a new property `$matchedTranslation`,
   which will hold language code of the Content translation that matched the search query.
 
+* Role draft functionality has been added, which has led to some API changes:
+  `eZ/Publish/API/Repository/RoleService::createRole` now returns a `eZ/Publish/API/Repository/Values/User/RoleDraft`.
+  New methods have been added to `eZ/Publish/API/Repository/RoleService`: `createRoleDraft`, `loadRoleDraft`,
+  `updateRoleDraft`, `addPolicyByRoleDraft`, `removePolicyByRoleDraft`, `deleteRoleDraft`, and `publishRoleDraft`.
+  `eZ/Publish/API/Repository/Values/User/Role` now has a `status` property, which may be one of `Role::STATUS_DEFINED`
+   or `Role::STATUS_DRAFT`.
+
+* Signature of Repository `setCurrentUser()` & `hasAccess()` changed to accept `UserReference`
+  As part of EZP-24834, a new API interface `UserReference` has been introduced that only
+  holds the user id, and can be used to specify current user and avoid having to load the
+  whole User object. User API abstract object has been changed to implement this so there is no BC
+  break for API use, only for custom API implementations.
+  Also new `getCurrentUserReference()` method has been added on Repository to get this object.
+  
+* Internal `limitationMap` repository service setting (for `RoleService`) has been renamed to `policyMap`.
+
 ## Deprecations
 
 * `eZ\Publish\Core\MVC\Symfony\Cache\GatewayCachePurger::purge()` is deprecated and will be removed in v6.1.
   Use `eZ\Publish\Core\MVC\Symfony\Cache\GatewayCachePurger::purgeForContent()` instead.
 
+* The REST resource `/content/views` is deprecated and will be removed in v6.1.
+  `/views`` replaces it.
+  Until it is removed, POST to `/content/views` will return a 301 instead of a 200, and include location header to the
+  new resource.
+
+* Some methods have been deprecated in `eZ/Publish/API/Repository/RoleService`: `updateRole`, `addPolicy`,
+  `removePolicy`, `deletePolicy`, and `updatePolicy`. Use the corresponding `*Draft` and `*ByRoleDraft` methods instead.
+
+* The `viewLocation`, `embedLocation`, `viewContent` and `embedContent` Content\ViewController`` actions are deprecated.
+  `viewAction` and `embedAction` must be used instead. Both accept the location as an extra parameter.
+  The corresponding `location_view` configuration is also deprecated. It will transparently be converted to `content_view`,
+  but you should update your configuration:
+  ```
+  location_view:
+    full:
+      article:
+        match:
+          Identifier\ContentType: [article]
+  ```
+  becomes:
+  ```
+  content_view:
+    full:
+      article:
+        match:
+          Identifier\ContentType: [article]
+  ```
+
+  Rules that use a custom location view controller can't be transparently changed.
+  Those need to be changed to custom content view controllers, that use a contentId instead of a locationId as an
+  argument. The location is available in the `$parameters` array.
+
+* The `viewBlock` and `viewBlockById` `PageController` actions are deprecated.
+  `viewAction` must be used instead. It accepts both `block` and `id` as parameters.
+
+* `eZ\Bundle\EzPublishCoreBundle\Controller\PageController` is deprecated and will be removed once
+  deprecated methods from base controller are also removed. You must use the base `PageController`
+  and its `viewAction` method.
+
+* The `eZ\Publish\Core\MVC\Symfony\View\MatcherInterface` interface is deprecated.
+  Matchers that use it will stop working until they implement `eZ\Publish\Core\MVC\Symfony\View\ViewMatcherInterface`
+  instead. This interface exposes a single `match()` method that expects an `eZ\Publish\Core\MVC\Symfony\View\View`
+  as its argument. Implementations should check the type of value the View contains, depending on what it is matching
+  against (`LocationValueView`, `ContentValueView`, `BlockValueView`.
+
+* The AbstractMatcherFactory, as well as the classes inheriting from it, are deprecated.
+  `ServiceAwareMatcherFactory`, or its parent `ClassNameMatcherFactory` can be used instead.
+  The match configuration can be  provided using dynamic settings in the services definitions, and a relative namespace
+  can be set using the constructor.
+
+* API Location::SORT_FIELD_MODIFIED_SUBNODE deprecated
+
+  This feature is not exposed in eZ Platform in anyway, and this remaining constant will
+  be removed in a future version together with the need to keep this column updated on tree
+  operations, which caused deadlocks in legacy.
 
 ## Removed features
 
@@ -178,7 +249,7 @@ Changes affecting version compatibility with former or future versions.
       system:
           my_siteaccess:
               legacy_mode: true
-              
+
   # New setting
   ez_publish_legacy:
       system:
@@ -209,6 +280,14 @@ Changes affecting version compatibility with former or future versions.
 
 * Deprecated virtual property `$criterion` on class `eZ\Publish\API\Repository\Values\Content\Query`,
   is removed.
+
+* Removed support for XML DOMDocument values on `eZ\Publish\SPI\Persistence\Content\FieldValue`
+
+  As part of EZP-24832, `$data` property now needs to be scalar/array type, so it can be json
+  serialized in future storage engine improvements. Likewise `$externalData`, like any other
+  `eZ\Publish\SPI\Persistence\ValueObject` property, has been documented to have to be
+  serializable, as it is cached by Persistence Cache which depends on this.
+
 
 ## Changes from 2015.01 (6.0.0-alpha1)
 

@@ -11,6 +11,33 @@ parameters:
     ezsettings.default.content_view: {}
     ezsettings.default.block_view: {}
 
+
+    # Default view templates
+    ezplatform.default_view_templates.content.full: 'EzPublishCoreBundle:default:content/full.html.twig'
+    ezplatform.default_view_templates.content.line: 'EzPublishCoreBundle:default:content/line.html.twig'
+    ezplatform.default_view_templates.content.embed: 'EzPublishCoreBundle:default:content/embed.html.twig'
+    ezplatform.default_view_templates.block: 'EzPublishCoreBundle:default:block/block.html.twig'
+
+    ezsettings.default.content_view_defaults:
+        full:
+            default:
+                template: %ezplatform.default_view_templates.content.full%
+                match: []
+        line:
+            default:
+                template: %ezplatform.default_view_templates.content.line%
+                match: []
+        embed:
+            default:
+                template: %ezplatform.default_view_templates.content.embed%
+                match: []
+
+    ezsettings.default.block_view_defaults:
+        block:
+            default:
+                template: %ezplatform.default_view_templates.block%
+                match: []
+
     # Common settings
     ezpublish.repositories: {}
     ezsettings.default.repository: ~
@@ -42,17 +69,6 @@ parameters:
     ezsettings.default.content.default_ttl: 60          # Default TTL cache value for content
     ezsettings.default.content.tree_root.location_id: 2 # Root locationId for routing and link generation. Useful for multisite apps with one repository.
     ezsettings.default.content.tree_root.excluded_uri_prefixes: [] # URI prefixes that are allowed to be outside the content tree
-
-    # FieldType settings
-    # Default XSL stylesheets for XmlText rendering to HTML5.
-    # Built-in stylesheets are treated as custom for the sake of extensibility.
-    ezsettings.default.fieldtypes.ezxml.custom_xsl:
-        -
-            path: %kernel.root_dir%/../vendor/ezsystems/ezpublish-kernel/eZ/Publish/Core/FieldType/XmlText/Input/Resources/stylesheets/eZXml2Html5_core.xsl
-            priority: 0
-        -
-            path: %kernel.root_dir%/../vendor/ezsystems/ezpublish-kernel/eZ/Publish/Core/FieldType/XmlText/Input/Resources/stylesheets/eZXml2Html5_custom.xsl
-            priority: 0
 
     # FieldType settings
     # Default XSL stylesheets for RichText rendering to HTML5.
@@ -256,6 +272,7 @@ parameters:
     ###
     # Internal settings
     ###
+    ezpublish.siteaccess.list: []
     ezpublish.siteaccess.groups: {}
     ezpublish.siteaccess.groups_by_siteaccess: {}
     ezpublish.siteaccess.default: ~

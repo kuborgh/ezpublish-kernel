@@ -16,9 +16,12 @@ namespace eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler;
  *
  * @see \eZ\Publish\Core\MVC\Symfony\View\Manager
  * @see \eZ\Publish\Core\MVC\Symfony\View\ContentViewProvider
+ *
+ * @deprecated since 6.0
  */
-class LocationViewPass extends ViewPass
+class LocationViewPass extends ViewManagerPass
 {
     const VIEW_PROVIDER_IDENTIFIER = 'ezpublish.location_view_provider';
     const ADD_VIEW_PROVIDER_METHOD = 'addLocationViewProvider';
+    const VIEW_TYPE = 'eZ\Publish\Core\MVC\Symfony\View\ContentView';
 }

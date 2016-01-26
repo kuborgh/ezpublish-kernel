@@ -219,7 +219,7 @@ Overview
 In the content module there are the root collections objects, locations, trash and sections
 
 ================================================================= =================== ======================= ============================ ================ ==============
-        :Resource:                                                      POST                GET                  PATCH/PUT                   DELETE            COPY
+Resource                                                          POST                GET                      PATCH/PUT                   DELETE           COPY
 ----------------------------------------------------------------- ------------------- ----------------------- ---------------------------- ---------------- --------------
 /                                                                 .                   list root resources     .                            .
 /content/objects                                                  create new content  .                       .                            .
@@ -241,6 +241,7 @@ In the content module there are the root collections objects, locations, trash a
 /content/locations                                                .                   list/find locations     .                            .
 /content/locations/<path>                                         .                   load a location         update location              delete location  copy subtree
 /content/locations/<path>/children                                .                   load children           .                            .
+/views                                                            create view         list views              .                            .
 /content/views                                                    create view         list views              .                            .
 /content/views/<ID>                                               .                   get view                .                            delete view
 /content/views/<ID>/results                                       .                   get view results        .                            .
@@ -332,7 +333,7 @@ XML Example
         <locationByPath media-type="" href="/api/ezp/v2/content/locations{?locationPath}"/>
         <trash media-type="application/vnd.ez.api.Trash+xml" href="/api/ezp/v2/content/trash"/>
         <sections media-type="application/vnd.ez.api.SectionList+xml" href="/api/ezp/v2/content/sections"/>
-        <views media-type="application/vnd.ez.api.RefList+xml" href="/api/ezp/v2/content/views"/>
+        <views media-type="application/vnd.ez.api.RefList+xml" href="/api/ezp/v2/views"/>
         <objectStateGroups media-type="application/vnd.ez.api.ObjectStateGroupList+xml" href="/api/ezp/v2/content/objectstategroups"/>
         <objectStates media-type="application/vnd.ez.api.ObjectStateList+xml" href="/api/ezp/v2/content/objectstategroups/{objectStateGroupId}/objectstates"/>
         <globalUrlAliases media-type="application/vnd.ez.api.UrlAliasRefList+xml" href="/api/ezp/v2/content/urlaliases"/>
@@ -442,7 +443,7 @@ JSON Example
                 "_media-type": "application/vnd.ez.api.UserRefList+json"
             },
             "views": {
-                "_href": "/api/ezp/v2/content/views",
+                "_href": "/api/ezp/v2/views",
                 "_media-type": "application/vnd.ez.api.RefList+json"
             },
             "refreshSession": {
@@ -790,7 +791,7 @@ List/Search Content
 ```````````````````
 :Resource: /content/objects
 :Method: GET (not implemented)
-:Description: This resource will used in future for searching content by providing a query string as alternative to posting a view to /content/views.
+:Description: This resource will be used in the future for searching content by providing a query string as alternative to posting a view to /views.
 
 Load Content by remote id
 `````````````````````````
@@ -2115,7 +2116,7 @@ Views
 
 Create View
 ```````````
-:Resource: /content/views
+:Resource: /views
 :Method:  POST
 :Description: executes a query and returns view including the results
               The View_ input reflects the criteria model of the public API.
@@ -2123,9 +2124,13 @@ Create View
     :Accept:
         :application/vnd.ez.api.View+xml: the view in xml format (see View_)
         :application/vnd.ez.api.View+json: the view in json format (see View_)
+        :application/vnd.ez.api.View+xml; version=1.1: the view in xml format (see View_)
+        :application/vnd.ez.api.View+json; version=1.1: the view in json format (see View_)
     :Content-Type:
         :application/vnd.ez.api.ViewInput+xml: the view input in xml format (see View_)
         :application/vnd.ez.api.ViewInput+json: the view input in json format (see View_)
+        :application/vnd.ez.api.ViewInput+xml; version=1.1: the view input in xml format (see View_)
+        :application/vnd.ez.api.ViewInput+json; version=1.1: the view input in json format (see View_)
 :Response: 200 OK
            Note : when persistence will be implemented, it will change to 201 Created
 
@@ -2148,9 +2153,9 @@ Perform a query on images withing the media section, sorted by name, limiting re
 
 .. code:: http
 
-    POST /content/views HTTP/1.1
-    Accept: application/vnd.ez.api.View+xml
-    Content-Type: application/vnd.ez.api.ViewInput+xml
+    POST /views HTTP/1.1
+    Accept: application/vnd.ez.api.View+xml; version=1.1
+    Content-Type: application/vnd.ez.api.ViewInput+xml; version=1.1
     Content-Length: xxx
 
 .. code:: xml
@@ -2158,7 +2163,7 @@ Perform a query on images withing the media section, sorted by name, limiting re
     <?xml version="1.0" encoding="UTF-8"?>
     <ViewInput>
       <identifier>TitleView</identifier>
-      <Query>
+      <ContentQuery>
         <Criteria>
           <ContentTypeIdentifierCriterion>image</ContentTypeIdentifierCriterion>
           <SectionIdentifierCriterion>media</SectionIdentifierCriterion>
@@ -2173,26 +2178,26 @@ Perform a query on images withing the media section, sorted by name, limiting re
         <FacetBuilders>
           <contentTypeFacetBuilder/>
         </FacetBuilders>
-      </Query>
+      </ContentQuery>
     </ViewInput>
 
 .. code:: http
 
     HTTP/1.1 200 OK
-    Location: /content/views/view1234
-    Content-Type: application/vnd.ez.api.View+xml
+    Location: /views/view1234
+    Content-Type: application/vnd.ez.api.View+xml; version=1.1
     Content-Length: xxx
 
 .. code:: xml
 
     <?xml version="1.0" encoding="UTF-8"?>
-    <View href="/content/views/TitleView" media-type="application/vnd.ez.api.View+xml">
+    <View href="/views/TitleView" media-type="application/vnd.ez.api.View+xml; version=1.1">
       <identifier>TitleView</identifier>
       <User href="/user/users/14" media-type="vnd.ez.api.User+xml"/>
       <public>false</public>
-      <Query>
+      <LocationQuery>
         <Criteria>
-          <FullTextCriterion>Title</FullTextCriterion>
+          <ParentLocationIdCriterion>2</ParentLocationIdCriterion>
         </Criteria>
         <limit>10</limit>
         <offset>0</offset>
@@ -2204,65 +2209,30 @@ Perform a query on images withing the media section, sorted by name, limiting re
         <FacetBuilders>
           <contentTypeFacetBuilder/>
         </FacetBuilders>
-      </Query>
+      </LocationQuery>
       <Result href="/content/views/view1234/results"
         media-type="application/vnd.ez.api.ViewResult+xml" count="34" time="31" maxScore="1.0">
         <searchHits>
           <searchHit score="1.0" index="installid1234567890">
             <hightlight/>
             <value>
-              <Content href="/content/objects/23" id="23"
-                media-type="application/vnd.ez.api.Content+xml" remoteId="qwert123"
-                xmlns:p="http://ez.no/API/Values" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                xsi:schemaLocation="http://ez.no/API/Values Content.xsd ">
-                <ContentType href="/content/types/10"
-                  media-type="application/vnd.ez.api.ContentType+xml" />
-                <Name>Name</Name>
-                <Versions href="/content/objects/23/versions" media-type="application/vnd.ez.api.VersionList+xml" />
-                <CurrentVersion href="/content/objects/23/currentversion"
-                  media-type="application/vnd.ez.api.Version+xml">
-                  <Version href="/content/objects/23/versions/2"
-                    media-type="application/vnd.ez.api.Version+xml">
-                    <VersionInfo>
-                      <id>123</id>
-                      <versionNo>2</versionNo>
-                      <status>PUBLISHED</status>
-                      <modificationDate>2001-12-31T12:00:00</modificationDate>
-                      <creator href="/user/users/14" media-type="application/vnd.ez.api.User+xml" />
-                      <creationDate>2001-12-31T12:00:00</creationDate>
-                      <initialLanguageCode>eng-UK</initialLanguageCode>
-                      <Content href="/content/objects/23"
-                        media-type="application/vnd.ez.api.ContentInfo+xml" />
-                    </VersionInfo>
-                    <Fields>
-                      <field>
-                        <id>1234</id>
-                        <fieldDefinitionIdentifier>title</fieldDefinitionIdentifier>
-                        <languageCode>eng-UK</languageCode>
-                        <fieldValue>Title</fieldValue>
-                      </field>
-                      <field>
-                        <id>1235</id>
-                        <fieldDefinitionIdentifier>summary
-                        </fieldDefinitionIdentifier>
-                        <languageCode>eng-UK</languageCode>
-                        <fieldValue>This is a summary</fieldValue>
-                      </field>
-                    </Fields>
-                    <Relations />
-                  </Version>
-                </CurrentVersion>
-                <Section href="/content/objects/23/section" media-type="application/vnd.ez.api.Section+xml" />
-                <MainLocation href="/content/objects/23/mainlocation"
-                  media-type="application/vnd.ez.api.Location+xml" />
-                <Locations href="/content/objects/23/locations"
-                  media-type="application/vnd.ez.api.LocationList+xml" />
-                <Owner href="/user/users/14" media-type="application/vnd.ez.api.User+xml" />
-                <PublishDate>2001-12-31T12:00:00</PublishDate>
-                <LastModificationDate>2001-12-31T12:00:00</LastModificationDate>
-                <MainLanguageCode>eng-UK</MainLanguageCode>
-                <AlwaysAvailable>true</AlwaysAvailable>
-              </Content>
+              <Location media-type="application/vnd.ez.api.Location+xml" href="/api/ezp/v2/content/locations/1/2">
+                <id>2</id>
+                <priority>0</priority>
+                <hidden>false</hidden>
+                <invisible>false</invisible>
+                <ParentLocation media-type="application/vnd.ez.api.Location+xml" href="/api/ezp/v2/content/locations/1"/>
+                <pathString>/1/2/</pathString>
+                <depth>1</depth>
+                <childCount>8</childCount>
+                <remoteId>f3e90596361e31d496d4026eb624c983</remoteId>
+                <Children media-type="application/vnd.ez.api.LocationList+xml" href="/api/ezp/v2/content/locations/1/2/children"/>
+                <Content media-type="application/vnd.ez.api.Content+xml" href="/api/ezp/v2/content/objects/57"/>
+                <sortField>PRIORITY</sortField>
+                <sortOrder>ASC</sortOrder>
+                <UrlAliases media-type="application/vnd.ez.api.UrlAliasRefList+xml" href="/api/ezp/v2/content/locations/1/2/urlaliases"/>
+              </Location>
+
             </value>
           </searchHit>
           ....
@@ -2290,6 +2260,39 @@ Perform a query on images withing the media section, sorted by name, limiting re
       </Result>
     </View>
 
+
+Create View
+```````````
+:Resource: /content/views
+:Method:  POST
+:Description: Executes a query and returns view including the results.
+              The View_ input reflects the criteria model of the public API.
+              Will respond with a 301, as the resource has been moved to /views (Platform 1.0)
+:Headers:
+    :Accept:
+        :application/vnd.ez.api.View+xml: the view in xml format (see View_)
+        :application/vnd.ez.api.View+json: the view in json format (see View_)
+        :application/vnd.ez.api.View+xml; version=1.1: the view in xml format (see View_)
+        :application/vnd.ez.api.View+json; version=1.1: the view in json format (see View_)
+    :Content-Type:
+        :application/vnd.ez.api.ViewInput+xml: the view input in xml format (see View_)
+        :application/vnd.ez.api.ViewInput+json: the view input in json format (see View_)
+        :application/vnd.ez.api.ViewInput+xml; version=1.1: the view input in xml format (see View_)
+        :application/vnd.ez.api.ViewInput+json; version=1.1: the view input in json format (see View_)
+:Response: 301 Moved Permanently
+
+.. code:: http
+
+          HTTP/1.1 301 Moved Permanently
+          ETag: "<new etag>"
+          Content-Type: <depending on accept header>
+          Content-Length: <length>
+          Location: /views
+.. parsed-literal::
+          View_
+
+:Error codes:
+    :400: If the Input does not match the input schema definition, In this case the response contains an ErrorMessage_
 
 List views
 ``````````
@@ -3257,7 +3260,7 @@ Overview
 --------
 
 ================================================== =================== =================== ======================= =======================
-      Resource                                           POST             GET                 PUT/PATCH               DELETE
+Resource                                           POST                GET                 PUT/PATCH               DELETE
 -------------------------------------------------- ------------------- ------------------- ----------------------- -----------------------
 /content/typegroups                                create new group    load all groups     .                       .
 /content/typegroups/<ID>                           .                   load group          update group            delete group
@@ -4257,30 +4260,31 @@ User Management
 Overview
 --------
 
-============================================= ===================== ===================== ===================== =======================
-Resource                                      POST                  GET                   PUT                   DELETE
---------------------------------------------- --------------------- --------------------- --------------------- -----------------------
-/user/groups                                  .                     load all topl. groups .                     .
-/user/groups/root                             .                     redirect to root      .                     .
-/user/groups/<path>                           .                     load user group       update user group     delete user group
-/user/groups/<path>/users                     .                     load users of group   .                     .
-/user/groups/<path>/subgroups                 create user group     load sub groups       .                     remove all sub groups
-/user/groups/<path>/roles                     assign role to group  load roles of group   .                     .
-/user/groups/<path>/roles/<ID>                .                     .                     .                     unassign role from group
-/user/users                                   create user           list users            .                     .
-/user/users/<ID>                              update user           load user             .                     delete user
-/user/users/<ID>/groups                       .                     load groups of user   add to group          .
-/user/users/<ID>/drafts                       .                     list all drafts owned .                     .
+============================================= ===================== ======================= ===================== ============================= ============= =====================
+Resource                                      POST                  GET                     PUT                   DELETE                        HEAD          PUBLISH
+--------------------------------------------- --------------------- ----------------------- --------------------- ----------------------------- ------------- ---------------------
+/user/groups                                  .                     load all topl. groups   .                     .                             .             .
+/user/groups/root                             .                     redirect to root        .                     .                             .             .
+/user/groups/<path>                           .                     load user group         update user group     delete user group             .             .
+/user/groups/<path>/users                     .                     load users of group     .                     .                             .             .
+/user/groups/<path>/subgroups                 create user group     load sub groups         .                     remove all sub groups         .             .
+/user/groups/<path>/roles                     assign role to group  load roles of group     .                     .                             .             .
+/user/groups/<path>/roles/<ID>                .                     .                       .                     unassign role from group      .             .
+/user/users                                   create user           list users              .                     .                             Verify users  .
+/user/users/<ID>                              update user           load user               .                     delete user                   .             .
+/user/users/<ID>/groups                       .                     load groups of user     add to group          .                             .             .
+/user/users/<ID>/drafts                       .                     list all drafts owned   .                     .                             .             .
                                                                     by the user
-/user/users/<ID>/roles                        assign role to user   load roles of group   .                     .
-/user/users/<ID>/roles/<ID>                   .                     load roleassignment   .                     unassign role from user
-/user/roles                                   create new role       load all roles        .                     .
-/user/roles/<ID>                              .                     load role             update role           delete role
-/user/roles/<ID>/policies                     create policy         load policies         .                     delete all policies from role
-/user/roles/<ID>/policies/<ID>                .                     load policy           update policy         delete policy
-/user/sessions                                create session        .                     .                     .
-/user/sessions/<sessionID>                    .                     .                     .                     delete session
-============================================= ===================== ===================== ===================== =======================
+/user/users/<ID>/roles                        assign role to user   load roles of group     .                     .                             .             .
+/user/users/<ID>/roles/<ID>                   .                     load roleassignment     .                     unassign role from user       .             .
+/user/roles                                   create new role       load all roles          .                     .                             .             .
+/user/roles/<ID>                              .                     load role               update role           delete role                   .             .
+/user/roles/<ID>/draft                        .                     load draft for role     update role draft     .                             .             publish a role draft
+/user/roles/<ID>/policies                     create policy         load policies           .                     delete all policies from role .             .
+/user/roles/<ID>/policies/<ID>                .                     load policy             update policy         delete policy                 .             .
+/user/sessions                                create session        .                       .                     .                             .             .
+/user/sessions/<sessionID>                    .                     .                       .                     delete session                .             .
+============================================= ===================== ======================= ===================== ============================= ============= =====================
 
 
 Managing Users and Groups
@@ -4868,6 +4872,8 @@ List Users
 :Parameters:
     :roleId: lists users assigned to the given role (ex: ``GET /user/users?roleId=/user/roles/1``)
     :remoteId: retrieves the user for the given remoteId (ex: ``GET /user/users?remoteId=55dd9713db75145f374bbd0b4f60ad29``)
+    :login: retrieves the user for the given login (ex: ``GET /user/users?login=editor``)
+    :email: lists users with the given email (ex: ``GET /user/users?email=editor@example.com``)
 :Headers:
     :Accept:
          :application/vnd.ez.api.UserList+xml:  if set the user list returned in xml format (see User_)
@@ -4885,7 +4891,28 @@ List Users
           User_
 
 :Error Codes:
-    :401: If the user has no permission to read users
+    :404: If there are no visibile users matching the filter
+
+Verify users
+````````````
+:Resource: /user/users
+:Method: HEAD
+:Description: Verifies if there are users matching the given filter.
+:Parameters:
+    :roleId: lists users assigned to the given role (ex: ``GET /user/users?roleId=/user/roles/1``)
+    :remoteId: retrieves the user for the given remoteId (ex: ``GET /user/users?remoteId=55dd9713db75145f374bbd0b4f60ad29``)
+    :login: retrieves the user for the given login (ex: ``GET /user/users?login=editor``)
+    :email: lists users with the given email (ex: ``GET /user/users?email=editor@example.com``)
+:Headers:
+:Response:
+
+.. code:: http
+
+          HTTP/1.1 200 OK
+          Content-Length: 0
+
+:Error Codes:
+    :404: If there are no users visible to the current user matching the given filter
 
 Load User
 `````````
@@ -5344,6 +5371,33 @@ Load Role
     :401: If the user has no permission to read roles
     :404: If the role does not exist
 
+Load Role draft
+```````````````
+:Resource: /user/roles/<ID>/draft
+:Method: GET
+:Description: loads a role draft by original role <ID>.
+:Headers:
+    :Accept:
+        :application/vnd.ez.api.Role+xml:  if set the user list returned in xml format (see Role_)
+        :application/vnd.ez.api.Role+json:  if set the user list is returned in json format (see Role_)
+    :If-None-Match: <etag>
+:Response:
+
+.. code:: http
+
+          HTTP/1.1 200 OK
+          Accept-Patch:  application/vnd.ez.api.RoleInput+(json|xml)
+          ETag: "<Etag>"
+          Content-Type: <depending on accept header>
+          Content-Length: <length>
+
+.. parsed-literal::
+          Role_
+
+:Error Codes:
+    :401: If the user has no permission to read roles
+    :404: If there is no draft or role with the given ID
+
 Update Role
 ```````````
 :Resource: /user/roles/<ID>
@@ -5373,6 +5427,57 @@ Update Role
     :400: If the Input does not match the input schema definition, In this case the response contains an ErrorMessage_
     :401: If the user is not authorized to update the role
     :412: If the current ETag does not match with the provided one in the If-Match header
+
+Update Role draft
+`````````````````
+:Resource: /user/roles/<ID>/draft
+:Method: PATCH or POST with header X-HTTP-Method-Override: PATCH
+:Description: Updates a role draft
+:Headers:
+        :Accept:
+             :application/vnd.ez.api.Role+xml:  if set the updated role is returned in xml format (see Role_)
+             :application/vnd.ez.api.Role+json:  if set the updated role is returned in json format (see Role_)
+        :Content-Type:
+             :application/vnd.ez.api.RoleInput+json: the RoleInput  schema encoded in json
+             :application/vnd.ez.api.RoleInput+xml: the RoleInput  schema encoded in xml
+        :If-Match: <etag> Causes to patch only if the specified etag is the current one. Otherwise a 412 is returned.
+:Response:
+
+.. code:: xml
+
+          HTTP/1.1 200 OK
+          Accept-Patch:  application/vnd.ez.api.RoleInput+(json|xml)
+          ETag: "<newEtag>"
+          Content-Type: <depending on accept header>
+          Content-Length: <length>
+.. parsed-literal::
+          Role_
+
+:Error Codes:
+    :400: If the Input does not match the input schema definition, In this case the response contains an ErrorMessage_
+    :401: If the user is not authorized to update the role
+    :404: If there is no draft or role with the given ID
+    :412: If the current ETag does not match with the provided one in the If-Match header
+
+Publish Role draft
+``````````````````
+:Resource: /user/roles/<ID/draft
+:Method: PUBLISH or POST with header X-HTTP-Method-Override: PUBLISH
+:Description: Publishes a role draft
+:Response:
+
+.. code:: http
+
+          HTTP/1.1 200 OK
+          Content-Type: <depending on accept header>
+          Content-Length: <length>
+.. parsed-literal::
+          Role_
+
+:Error Codes:
+    :401: If the user is not authorized to publish this content type draft
+    :403: If the content type draft is not complete e.g. there is no field definition provided
+    :404: If there is no draft or role with the given ID
 
 Delete Role
 ```````````
@@ -7313,7 +7418,7 @@ View XML Schema
         </xsd:complexContent>
       </xsd:complexType>
 
-      <xsd:complexType name="facetTyoe">
+      <xsd:complexType name="facetType">
         <xsd:choice>
           <xsd:element name="sectionFacet" type="sectionFacetType" />
           <xsd:element name="locationFacet" type="locationFacetType" />
@@ -7380,7 +7485,10 @@ View XML Schema
               <xsd:element name="identifier" type="xsd:string" />
               <xsd:element name="User" type="ref" />
               <xsd:element name="public" type="xsd:boolean" />
-              <xsd:element name="Query" type="queryType" />
+              <xsd:any minOccurs="1" maxOccurs="1">
+                <xsd:element name="ContentQuery" type="queryType" />
+                <xsd:element name="LocationQuery" type="queryType" />
+              </xsd:any>
               <xsd:element name="Result" type="resultType" />
             </xsd:all>
           </xsd:extension>
@@ -7691,6 +7799,14 @@ Trash XML Schema
               <xsd:element name="Content" type="ref" />
               <xsd:element name="sortField" type="sortFieldType" />
               <xsd:element name="sortOrder" type="sortOrderType" />
+              <xsd:element name="ContentInfo" type="vnd.ez.api.ContentInfo">
+                <xsd:annotation>
+                  <xsd:documentation>
+                    ContentInfo related to the Content
+                    this TrashItem is part of.
+                  </xsd:documentation>
+                </xsd:annotation>
+              </xsd:element>
             </xsd:all>
           </xsd:extension>
         </xsd:complexContent>
@@ -9517,4 +9633,3 @@ ErrorMessage XML Schema
       </xsd:complexType>
       <xsd:element name="ErrorMessage" type="vnd.ez.api.ErrorMessage"></xsd:element>
     </xsd:schema>
-

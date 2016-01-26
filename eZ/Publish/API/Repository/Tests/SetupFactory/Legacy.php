@@ -11,11 +11,13 @@
 namespace eZ\Publish\API\Repository\Tests\SetupFactory;
 
 use eZ\Publish\Core\Base\ServiceContainer;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use eZ\Publish\API\Repository\Tests\SetupFactory;
 use eZ\Publish\API\Repository\Tests\IdManager;
 use eZ\Publish\Core\Persistence\Legacy\Content\Type\MemoryCachingHandler as CachingContentTypeHandler;
 use eZ\Publish\Core\Persistence\Legacy\Content\Language\CachingHandler as CachingLanguageHandler;
 use Exception;
+use eZ\Publish\Core\Repository\Values\User\UserReference;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
@@ -128,9 +130,8 @@ class Legacy extends SetupFactory
         $this->clearInternalCaches();
         $repository = $this->getServiceContainer()->get($this->repositoryReference);
 
-        $repository->setCurrentUser(
-            $repository->getUserService()->loadUser(14)
-        );
+        // Set admin user as current user by default
+        $repository->setCurrentUser(new UserReference(14));
 
         return $repository;
     }
@@ -365,6 +366,8 @@ class Legacy extends SetupFactory
             /* @var \Symfony\Component\DependencyInjection\Loader\YamlFileLoader $loader */
             $loader->load('tests/integration_legacy.yml');
 
+            $this->externalBuildContainer($containerBuilder);
+
             $containerBuilder->setParameter(
                 'legacy_dsn',
                 self::$dsn
@@ -385,6 +388,17 @@ class Legacy extends SetupFactory
         }
 
         return self::$serviceContainer;
+    }
+
+    /**
+     * This is intended to be used from external repository in order to
+     * enable container customization.
+     *
+     * @param \Symfony\Component\DependencyInjection\ContainerBuilder $containerBuilder
+     */
+    protected function externalBuildContainer(ContainerBuilder $containerBuilder)
+    {
+        // Does nothing by default
     }
 
     /**

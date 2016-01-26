@@ -31,6 +31,11 @@ class FOSPurgeClient implements PurgeClientInterface
         $this->cacheManager = $cacheManager;
     }
 
+    public function __destruct()
+    {
+        $this->cacheManager->flush();
+    }
+
     public function purge($locationIds)
     {
         if (empty($locationIds)) {
@@ -41,7 +46,7 @@ class FOSPurgeClient implements PurgeClientInterface
             $locationIds = array($locationIds);
         }
 
-        $this->cacheManager->invalidate(array('X-Location-Id' => '(' . implode('|', $locationIds) . ')'));
+        $this->cacheManager->invalidate(array('X-Location-Id' => '^(' . implode('|', $locationIds) . ')$'));
     }
 
     public function purgeAll()

@@ -39,6 +39,8 @@ parameters:
     ezpublish_rest.output.value_object_visitor.VersionInfo.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\VersionInfo
     ezpublish_rest.output.value_object_visitor.ImageVariation.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\ImageVariation
     ezpublish_rest.output.value_object_visitor.Version.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\Version
+    ezpublish_rest.output.value_object_visitor.VersionUpdate.class: eZ\Publish\Core\REST\Client\Output\ValueObjectVisitor\VersionUpdate
+    ezpublish_rest.output.value_object_visitor.RestContentCreateStruct.class: eZ\Publish\Core\REST\Client\Output\ValueObjectVisitor\RestContentCreateStruct
 
     # User group
     ezpublish_rest.output.value_object_visitor.RestUserGroup.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\RestUserGroup
@@ -82,6 +84,7 @@ parameters:
     # Location
     ezpublish_rest.output.value_object_visitor.LocationList.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\LocationList
     ezpublish_rest.output.value_object_visitor.RestLocation.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\RestLocation
+    ezpublish_rest.output.value_object_visitor.Location.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\Location
     ezpublish_rest.output.value_object_visitor.CreatedLocation.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\CreatedLocation
     ezpublish_rest.output.value_object_visitor.LocationCreateStruct.class: eZ\Publish\Core\REST\Client\Output\ValueObjectVisitor\LocationCreateStruct
     ezpublish_rest.output.value_object_visitor.LocationUpdateStruct.class: eZ\Publish\Core\REST\Client\Output\ValueObjectVisitor\LocationUpdateStruct
@@ -132,6 +135,7 @@ parameters:
     ezpublish_rest.output.value_object_visitor.PermanentRedirect.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\PermanentRedirect
     ezpublish_rest.output.value_object_visitor.TemporaryRedirect.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\TemporaryRedirect
     ezpublish_rest.output.value_object_visitor.Options.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\Options
+    ezpublish_rest.output.value_object_visitor.OK.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\OK
 
     # Cache
     ezpublish_rest.output.value_object_visitor.cached_value.class: eZ\Publish\Core\REST\Server\Output\ValueObjectVisitor\CachedValue
@@ -141,6 +145,10 @@ parameters:
 
     # Limitation
     ezpublish_rest.output.value_object_visitor.Limitation.class: eZ\Publish\Core\REST\Client\Output\ValueObjectVisitor\Limitation
+
+    # View
+    ezpublish_rest.output.value_object_visitor.ViewInput.class: eZ\Publish\Core\REST\Client\Output\ValueObjectVisitor\ViewInput
+
 
 services:
     ezpublish_rest.output.value_object_visitor.base:
@@ -154,35 +162,35 @@ services:
     ezpublish_rest.output.value_object_visitor.InvalidArgumentException:
         parent: ezpublish_rest.output.value_object_visitor.base
         class: %ezpublish_rest.output.value_object_visitor.InvalidArgumentException.class%
-        arguments: [ true  ]
+        arguments: [ %kernel.debug%, @translator ]
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Exceptions\InvalidArgumentException }
 
     ezpublish_rest.output.value_object_visitor.NotFoundException:
         parent: ezpublish_rest.output.value_object_visitor.base
         class: %ezpublish_rest.output.value_object_visitor.NotFoundException.class%
-        arguments: [ true  ]
+        arguments: [ %kernel.debug%, @translator ]
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Exceptions\NotFoundException }
 
     ezpublish_rest.output.value_object_visitor.UnauthorizedException:
         parent: ezpublish_rest.output.value_object_visitor.base
         class: %ezpublish_rest.output.value_object_visitor.UnauthorizedException.class%
-        arguments: [ true  ]
+        arguments: [ %kernel.debug%, @translator ]
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Exceptions\UnauthorizedException }
 
     ezpublish_rest.output.value_object_visitor.BadStateException:
         parent: ezpublish_rest.output.value_object_visitor.base
         class: %ezpublish_rest.output.value_object_visitor.BadStateException.class%
-        arguments: [ true  ]
+        arguments: [ %kernel.debug%, @translator ]
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Exceptions\BadStateException }
 
     ezpublish_rest.output.value_object_visitor.BadRequestException:
         parent: ezpublish_rest.output.value_object_visitor.base
         class: %ezpublish_rest.output.value_object_visitor.BadRequestException.class%
-        arguments: [ true  ]
+        arguments: [ %kernel.debug%, @translator ]
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Server\Exceptions\BadRequestException }
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Common\Exceptions\Parser }
@@ -190,21 +198,21 @@ services:
     ezpublish_rest.output.value_object_visitor.ForbiddenException:
         parent: ezpublish_rest.output.value_object_visitor.base
         class: %ezpublish_rest.output.value_object_visitor.ForbiddenException.class%
-        arguments: [ true  ]
+        arguments: [ %kernel.debug%, @translator ]
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Server\Exceptions\ForbiddenException }
 
     ezpublish_rest.output.value_object_visitor.NotImplementedException:
         parent: ezpublish_rest.output.value_object_visitor.base
         class: %ezpublish_rest.output.value_object_visitor.NotImplementedException.class%
-        arguments: [ true  ]
+        arguments: [ %kernel.debug%, @translator ]
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Exceptions\NotImplementedException }
 
     ezpublish_rest.output.value_object_visitor.Exception:
         parent: ezpublish_rest.output.value_object_visitor.base
         class: %ezpublish_rest.output.value_object_visitor.Exception.class%
-        arguments: [ true  ]
+        arguments: [ %kernel.debug%, @translator ]
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: Exception }
 
@@ -333,6 +341,20 @@ services:
         arguments: [ @ezpublish_rest.field_type_serializer  ]
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Server\Values\Version }
+
+    ezpublish_rest.output.value_object_visitor.VersionUpdate:
+        parent: ezpublish_rest.output.value_object_visitor.base
+        class: %ezpublish_rest.output.value_object_visitor.VersionUpdate.class%
+        arguments: [ @ezpublish_rest.field_type_serializer  ]
+        tags:
+            - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Client\Values\Content\VersionUpdate }
+
+    ezpublish_rest.output.value_object_visitor.RestContentCreateStruct:
+        parent: ezpublish_rest.output.value_object_visitor.base
+        class: %ezpublish_rest.output.value_object_visitor.RestContentCreateStruct.class%
+        arguments: [ @ezpublish_rest.field_type_serializer  ]
+        tags:
+            - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Server\Values\RestContentCreateStruct }
 
     # UserGroup
     ezpublish_rest.output.value_object_visitor.RestUserGroup:
@@ -540,12 +562,14 @@ services:
         class: %ezpublish_rest.output.value_object_visitor.Role.class%
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Values\User\Role }
+            - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Values\User\RoleDraft }
 
     ezpublish_rest.output.value_object_visitor.Policy:
         parent: ezpublish_rest.output.value_object_visitor.base
         class: %ezpublish_rest.output.value_object_visitor.Policy.class%
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Values\User\Policy }
+            - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Values\User\PolicyDraft }
 
     ezpublish_rest.output.value_object_visitor.CreatedPolicy:
         parent: ezpublish_rest.output.value_object_visitor.base
@@ -626,6 +650,13 @@ services:
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Server\Values\RestLocation }
 
+    ezpublish_rest.output.value_object_visitor.Location:
+        parent: ezpublish_rest.output.value_object_visitor.base
+        class: %ezpublish_rest.output.value_object_visitor.Location.class%
+        tags:
+            - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Values\Content\Location }
+        arguments: [@ezpublish.api.service.location]
+
     ezpublish_rest.output.value_object_visitor.LocationList:
         parent: ezpublish_rest.output.value_object_visitor.base
         class: %ezpublish_rest.output.value_object_visitor.LocationList.class%
@@ -637,6 +668,7 @@ services:
         class: %ezpublish_rest.output.value_object_visitor.LocationCreateStruct.class%
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\API\Repository\Values\Content\LocationCreateStruct }
+        arguments: [@ezpublish.api.service.location]
 
     ezpublish_rest.output.value_object_visitor.LocationUpdateStruct:
         parent: ezpublish_rest.output.value_object_visitor.base
@@ -790,6 +822,12 @@ services:
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Server\Values\Options }
 
+    ezpublish_rest.output.value_object_visitor.OK:
+        parent: ezpublish_rest.output.value_object_visitor.base
+        class: %ezpublish_rest.output.value_object_visitor.OK.class%
+        tags:
+            - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Server\Values\OK }
+
     ezpublish_rest.output.value_object_visitor.cached_value:
         class: %ezpublish_rest.output.value_object_visitor.cached_value.class%
         parent: ezpublish_rest.output.value_object_visitor.base
@@ -799,3 +837,9 @@ services:
             - [setRequestStack, [@request_stack]]
         tags:
             - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Server\Values\CachedValue }
+
+    ezpublish_rest.output.value_object_visitor.ViewInput:
+        parent: ezpublish_rest.output.value_object_visitor.base
+        class: %ezpublish_rest.output.value_object_visitor.ViewInput.class%
+        tags:
+            - { name: ezpublish_rest.output.value_object_visitor, type: eZ\Publish\Core\REST\Client\Values\ViewInput }

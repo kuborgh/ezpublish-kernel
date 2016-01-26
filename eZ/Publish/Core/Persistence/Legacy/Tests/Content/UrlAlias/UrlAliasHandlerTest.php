@@ -933,6 +933,21 @@ class UrlAliasHandlerTest extends TestCase
         );
     }
 
+    /**
+     * Test for the lookup() method with uppercase utf8 characters.
+     *
+     * @covers \eZ\Publish\Core\Persistence\Legacy\Content\UrlAlias\Handler::lookup
+     * @depends testLookup
+     */
+    public function testLookupUppercaseIri()
+    {
+        $handler = $this->getHandler();
+        $this->insertDatabaseFixture(__DIR__ . '/_fixtures/urlaliases_location_iri.php');
+
+        $urlAlias = $handler->lookup('ŒÄ');
+        self::assertInstanceOf('eZ\\Publish\\SPI\\Persistence\\Content\\UrlAlias', $urlAlias);
+    }
+
     protected function assertVirtualUrlAliasValid(UrlAlias $urlAlias, $id)
     {
         self::assertInstanceOf('eZ\\Publish\\SPI\\Persistence\\Content\\UrlAlias', $urlAlias);
@@ -1042,7 +1057,7 @@ class UrlAliasHandlerTest extends TestCase
         $handler->publishUrlAliasForLocation(314, 2, 'simple', 'eng-GB', true);
         $publishedUrlAlias = $handler->lookup('simple');
 
-        self::assertEquals(2, $this->countRows());
+        self::assertEquals(4, $this->countRows());
         self::assertEquals(
             new UrlAlias(
                 array(
@@ -1055,6 +1070,7 @@ class UrlAliasHandlerTest extends TestCase
                             'always-available' => true,
                             'translations' => array(
                                 'eng-GB' => 'simple',
+                                'cro-HR' => 'path314',
                             ),
                         ),
                     ),
@@ -1087,7 +1103,7 @@ class UrlAliasHandlerTest extends TestCase
         $handler->publishUrlAliasForLocation(314, 2, 'simple', 'eng-GB', true);
         $republishedUrlAlias = $handler->lookup('simple');
 
-        self::assertEquals(2, $this->countRows());
+        self::assertEquals(4, $this->countRows());
         self::assertEquals(
             $publishedUrlAlias,
             $republishedUrlAlias
@@ -1110,7 +1126,7 @@ class UrlAliasHandlerTest extends TestCase
 
         $handler->publishUrlAliasForLocation(314, 2, 'simple', 'eng-GB', true);
         $handler->publishUrlAliasForLocation(315, 2, 'simple', 'eng-GB', true);
-        self::assertEquals(3, $this->countRows());
+        self::assertEquals(5, $this->countRows());
 
         $urlAlias = $handler->lookup('simple2');
         self::assertEquals(
@@ -1214,7 +1230,7 @@ class UrlAliasHandlerTest extends TestCase
         $handler->publishUrlAliasForLocation(314, 2, 'jedan', 'eng-GB', false);
         $urlAlias2 = $handler->lookup('jedan');
 
-        self::assertEquals(2, $this->countRows());
+        self::assertEquals(4, $this->countRows());
 
         foreach ($urlAlias2 as $propertyName => $propertyValue) {
             if ($propertyName === 'languageCodes') {
@@ -1261,7 +1277,7 @@ class UrlAliasHandlerTest extends TestCase
         $handler->publishUrlAliasForLocation(314, 2, 'jedan', 'cro-HR', false);
         $handler->publishUrlAliasForLocation(314, 2, 'dva', 'cro-HR', true);
 
-        self::assertEquals(3, $this->countRows());
+        self::assertEquals(5, $this->countRows());
 
         $newUrlAlias = $handler->lookup('dva');
 
@@ -1336,7 +1352,7 @@ class UrlAliasHandlerTest extends TestCase
         $handler->publishUrlAliasForLocation(314, 2, 'jedan', 'eng-GB');
         $handler->publishUrlAliasForLocation(314, 2, 'dva', 'eng-GB');
 
-        self::assertEquals(3, $this->countRows());
+        self::assertEquals(5, $this->countRows());
 
         $urlAlias = $handler->lookup('dva');
         self::assertEquals(
@@ -1756,7 +1772,7 @@ class UrlAliasHandlerTest extends TestCase
             false
         );
 
-        self::assertEquals(2, $this->countRows());
+        self::assertEquals(4, $this->countRows());
         self::assertEquals(
             new UrlAlias(
                 array(
@@ -1803,12 +1819,12 @@ class UrlAliasHandlerTest extends TestCase
             false
         );
 
-        self::assertEquals(6, $this->countRows());
+        self::assertEquals(8, $this->countRows());
 
         self::assertEquals(
             new UrlAlias(
                 array(
-                    'id' => '5-' . md5('here'),
+                    'id' => '7-' . md5('here'),
                     'type' => UrlAlias::LOCATION,
                     'destination' => 314,
                     'pathData' => array(
@@ -1878,7 +1894,7 @@ class UrlAliasHandlerTest extends TestCase
         );
         $loadedCustomUrlAlias = $handler->lookup($path);
 
-        self::assertEquals(2, $this->countRows());
+        self::assertEquals(4, $this->countRows());
 
         foreach ($loadedCustomUrlAlias as $propertyName => $propertyValue) {
             if ($propertyName === 'pathData') {
@@ -1921,11 +1937,11 @@ class UrlAliasHandlerTest extends TestCase
             true
         );
 
-        self::assertEquals(3, $this->countRows());
+        self::assertEquals(5, $this->countRows());
         self::assertEquals(
             new UrlAlias(
                 array(
-                    'id' => '2-' . md5('palunko'),
+                    'id' => '4-' . md5('palunko'),
                     'type' => UrlAlias::LOCATION,
                     'destination' => 314,
                     'pathData' => array(

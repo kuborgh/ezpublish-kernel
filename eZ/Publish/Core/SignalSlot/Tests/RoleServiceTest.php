@@ -10,11 +10,13 @@
  */
 namespace eZ\Publish\Core\SignalSlot\Tests;
 
+use eZ\Publish\Core\Repository\Values\User\PolicyDraft;
 use eZ\Publish\Core\Repository\Values\User\RoleCreateStruct;
 use eZ\Publish\API\Repository\Values\User\RoleUpdateStruct;
 use eZ\Publish\Core\Repository\Values\User\PolicyCreateStruct;
 use eZ\Publish\Core\Repository\Values\User\PolicyUpdateStruct;
 use eZ\Publish\Core\Repository\Values\User\Role;
+use eZ\Publish\Core\Repository\Values\User\RoleDraft;
 use eZ\Publish\Core\Repository\Values\User\Policy;
 use eZ\Publish\API\Repository\Values\User\Limitation\SectionLimitation;
 use eZ\Publish\Core\Repository\Values\User\UserRoleAssignment;
@@ -50,12 +52,14 @@ class RoleServiceTest extends ServiceTest
                 'identifier' => $roleIdentifier,
             )
         );
+        $roleDraft = new RoleDraft(['innerRole' => $role]);
         $policy = new Policy(
             array(
                 'id' => $policyId,
                 'roleId' => $roleId,
             )
         );
+        $policyDraft = new PolicyDraft(['innerPolicy' => $policy]);
         $roleCreateStruct = new RoleCreateStruct();
         $roleUpdateStruct = new RoleUpdateStruct();
         $policyCreateStruct = new PolicyCreateStruct();
@@ -88,11 +92,35 @@ class RoleServiceTest extends ServiceTest
                 array('roleId' => $roleId),
             ),
             array(
+                'createRoleDraft',
+                array($role),
+                $role,
+                1,
+                'eZ\Publish\Core\SignalSlot\Signal\RoleService\CreateRoleDraftSignal',
+                array('roleId' => $roleId),
+            ),
+            array(
                 'updateRole',
                 array($role, $roleUpdateStruct),
                 $role,
                 1,
                 'eZ\Publish\Core\SignalSlot\Signal\RoleService\UpdateRoleSignal',
+                array('roleId' => $roleId),
+            ),
+            array(
+                'updateRoleDraft',
+                array($roleDraft, $roleUpdateStruct),
+                $roleDraft,
+                1,
+                'eZ\Publish\Core\SignalSlot\Signal\RoleService\UpdateRoleDraftSignal',
+                array('roleId' => $roleId),
+            ),
+            array(
+                'publishRoleDraft',
+                array($roleDraft),
+                $roleDraft,
+                1,
+                'eZ\Publish\Core\SignalSlot\Signal\RoleService\PublishRoleDraftSignal',
                 array('roleId' => $roleId),
             ),
             array(
@@ -107,11 +135,33 @@ class RoleServiceTest extends ServiceTest
                 ),
             ),
             array(
+                'addPolicyByRoleDraft',
+                array($roleDraft, $policyCreateStruct),
+                $roleDraft,
+                1,
+                'eZ\Publish\Core\SignalSlot\Signal\RoleService\AddPolicyByRoleDraftSignal',
+                array(
+                    'roleId' => $roleId,
+                    'policyId' => $roleId,
+                ),
+            ),
+            array(
                 'removePolicy',
                 array($role, $policy),
                 $role,
                 1,
                 'eZ\Publish\Core\SignalSlot\Signal\RoleService\RemovePolicySignal',
+                array(
+                    'roleId' => $roleId,
+                    'policyId' => $policyId,
+                ),
+            ),
+            array(
+                'removePolicyByRoleDraft',
+                array($roleDraft, $policyDraft),
+                $roleDraft,
+                1,
+                'eZ\Publish\Core\SignalSlot\Signal\RoleService\RemovePolicyByRoleDraftSignal',
                 array(
                     'roleId' => $roleId,
                     'policyId' => $policyId,
@@ -143,6 +193,12 @@ class RoleServiceTest extends ServiceTest
                 0,
             ),
             array(
+                'loadRoleDraft',
+                array($roleId),
+                $roleDraft,
+                0,
+            ),
+            array(
                 'loadRoleByIdentifier',
                 array($roleIdentifier),
                 $role,
@@ -160,6 +216,14 @@ class RoleServiceTest extends ServiceTest
                 null,
                 1,
                 'eZ\Publish\Core\SignalSlot\Signal\RoleService\DeleteRoleSignal',
+                array('roleId' => $roleId),
+            ),
+            array(
+                'deleteRoleDraft',
+                array($roleDraft),
+                null,
+                1,
+                'eZ\Publish\Core\SignalSlot\Signal\RoleService\DeleteRoleDraftSignal',
                 array('roleId' => $roleId),
             ),
             array(

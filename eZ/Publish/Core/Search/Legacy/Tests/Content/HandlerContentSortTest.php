@@ -95,11 +95,13 @@ class HandlerContentSortTest extends LanguageAwareTestCase
                             $this->getContentTypeHandler()
                         ),
                     )
-                )
+                ),
+                $this->getLanguageHandler()
             ),
             $this->getMock('eZ\\Publish\\Core\\Search\\Legacy\\Content\\Location\\Gateway'),
             $this->getContentMapperMock(),
-            $this->getMock('eZ\\Publish\\Core\\Persistence\\Legacy\\Content\\Location\\Mapper')
+            $this->getMock('eZ\\Publish\\Core\\Persistence\\Legacy\\Content\\Location\\Mapper'),
+            $this->getLanguageHandler()
         );
     }
 
@@ -121,7 +123,7 @@ class HandlerContentSortTest extends LanguageAwareTestCase
                             'ezstring' => new Converter\TextLineConverter(),
                             'ezprice' => new Converter\IntegerConverter(),
                             'ezurl' => new Converter\UrlConverter(),
-                            'ezxmltext' => new Converter\XmlTextConverter(),
+                            'ezrichtext' => new Converter\RichTextConverter(),
                             'ezboolean' => new Converter\CheckboxConverter(),
                             'ezkeyword' => new Converter\KeywordConverter(),
                             'ezauthor' => new Converter\AuthorConverter(),

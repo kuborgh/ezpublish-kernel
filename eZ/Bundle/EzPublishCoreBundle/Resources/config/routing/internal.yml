@@ -6,6 +6,14 @@ _ezpublishLocation:
         viewType: full
         layout: true
 
+_ez_content_view:
+    path: /view/content/{contentId}/{language}/{viewType}/{layout}/{locationId}
+    defaults:
+        _controller: ez_content:viewAction
+        viewType: full
+        locationId: null
+        layout: true
+
 _ezpublishPreviewContent:
     path: /content/versionview/{contentId}/{versionNo}/{language}/site_access/{siteAccessName}
     defaults: { _controller: ezpublish.controller.content.preview:previewContentAction }

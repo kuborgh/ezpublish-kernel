@@ -19,6 +19,7 @@ use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\FragmentPass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\HttpCachePass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\IdentityDefinerPass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\ImaginePass;
+use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\QueryTypePass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\RegisterSearchEnginePass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\RegisterStorageEnginePass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\LegacyStorageEnginePass;
@@ -30,11 +31,12 @@ use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\LocationViewPass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\BlockViewPass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\SecurityPass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\SignalSlotPass;
-use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\XmlTextConverterPass;
+use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\ViewProvidersPass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\RichTextHtml5ConverterPass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Compiler\StorageConnectionPass;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Configuration\ComplexSettings\ComplexSettingParser;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Configuration\SiteAccessAware\DynamicSettingParser;
+use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Security\PolicyProvider\RepositoryPolicyProvider;
 use eZ\Publish\Core\Base\Container\Compiler\FieldTypeCollectionPass;
 use eZ\Publish\Core\Base\Container\Compiler\RegisterLimitationTypePass;
 use eZ\Publish\Core\Base\Container\Compiler\Storage\ExternalStorageRegistryPass;
@@ -67,7 +69,6 @@ class EzPublishCoreBundle extends Bundle
         $container->addCompilerPass(new BlockViewPass());
         $container->addCompilerPass(new SignalSlotPass());
         $container->addCompilerPass(new IdentityDefinerPass());
-        $container->addCompilerPass(new XmlTextConverterPass());
         $container->addCompilerPass(new SecurityPass());
         $container->addCompilerPass(new RichTextHtml5ConverterPass());
         $container->addCompilerPass(new FragmentPass());
@@ -86,12 +87,14 @@ class EzPublishCoreBundle extends Bundle
             PassConfig::TYPE_BEFORE_REMOVING
         );
         $container->addCompilerPass(new BinaryContentDownloadPass());
+        $container->addCompilerPass(new ViewProvidersPass());
 
         // Storage passes
         $container->addCompilerPass(new ExternalStorageRegistryPass());
         // Legacy Storage passes
         $container->addCompilerPass(new FieldValueConverterRegistryPass());
         $container->addCompilerPass(new RoleLimitationConverterPass());
+        $container->addCompilerPass(new QueryTypePass());
 
         $securityExtension = $container->getExtension('security');
         $securityExtension->addSecurityListenerFactory(new HttpBasicFactory());
@@ -102,13 +105,16 @@ class EzPublishCoreBundle extends Bundle
         if (!isset($this->extension)) {
             $this->extension = new EzPublishCoreExtension(
                 array(
-                    new ConfigParser\LocationView(),
+                    // LocationView config parser needs to be specified AFTER ContentView config
+                    // parser since it is used to convert location view override rules to content
+                    // view override rules. If it were specified before, ContentView provider would
+                    // just undo the conversion LocationView did.
                     new ConfigParser\ContentView(),
+                    new ConfigParser\LocationView(),
                     new ConfigParser\BlockView(),
                     new ConfigParser\Common(),
                     new ConfigParser\Content(),
                     new ConfigParser\FieldType\RichText(),
-                    new ConfigParser\FieldType\XmlText(),
                     new ConfigParser\FieldTemplates(),
                     new ConfigParser\FieldEditTemplates(),
                     new ConfigParser\FieldDefinitionSettingsTemplates(),
@@ -119,6 +125,8 @@ class EzPublishCoreBundle extends Bundle
                     new ConfigParser\IO(new ComplexSettingParser()),
                 )
             );
+
+            $this->extension->addPolicyProvider(new RepositoryPolicyProvider());
         }
 
         return $this->extension;

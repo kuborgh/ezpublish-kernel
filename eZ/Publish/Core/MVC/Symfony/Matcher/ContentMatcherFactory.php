@@ -10,28 +10,30 @@
  */
 namespace eZ\Publish\Core\MVC\Symfony\Matcher;
 
-use eZ\Publish\API\Repository\Values\Content\ContentInfo;
-use eZ\Publish\API\Repository\Values\ValueObject;
+use eZ\Publish\Core\MVC\Symfony\View\ContentValueView;
+use eZ\Publish\Core\MVC\Symfony\View\View;
 use InvalidArgumentException;
 
+/**
+ * @deprecated Deprecated since 6.0, will be removed in 6.1. Use the ClassNameMatcherFactory instead.
+ */
 class ContentMatcherFactory extends ContentBasedMatcherFactory
 {
     /**
      * Checks if $valueObject matches $matcher rules.
      *
-     * @param \eZ\Publish\Core\MVC\Symfony\Matcher\ContentBased\MatcherInterface $matcher
-     * @param ValueObject $valueObject
-     *
-     * @throws \InvalidArgumentException
+     * @param \eZ\Publish\Core\MVC\Symfony\Matcher\MatcherInterface $matcher
+     * @param \eZ\Publish\Core\MVC\Symfony\View\View $view
      *
      * @return bool
+     * @internal param \eZ\Publish\API\Repository\Values\ValueObject $valueObject
      */
-    protected function doMatch(MatcherInterface $matcher, ValueObject $valueObject)
+    protected function doMatch(MatcherInterface $matcher, View $view)
     {
-        if (!$valueObject instanceof ContentInfo) {
-            throw new InvalidArgumentException('Value object must be a valid ContentInfo instance');
+        if (!$view instanceof ContentValueView) {
+            throw new InvalidArgumentException('View must be a ContentValueView instance');
         }
 
-        return $matcher->matchContentInfo($valueObject);
+        return $matcher->match($view);
     }
 }

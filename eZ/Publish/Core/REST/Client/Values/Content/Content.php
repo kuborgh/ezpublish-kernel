@@ -11,8 +11,8 @@
 
 namespace eZ\Publish\Core\REST\Client\Values\Content;
 
-use eZ\Publish\Core\REST\Client\ContentService;
-use eZ\Publish\API\Repository\Values\Content\Content as APIContent;
+use eZ\Publish\API\Repository\ContentService;
+use eZ\Publish\Core\Repository\Values\Content\Content as APIContent;
 
 /**
  * Implementation of the {@link \eZ\Publish\API\Repository\Values\Content\Content}

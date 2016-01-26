@@ -11,11 +11,12 @@
 namespace eZ\Publish\Core\Limitation;
 
 use eZ\Publish\API\Repository\Values\ValueObject;
-use eZ\Publish\API\Repository\Values\User\User as APIUser;
+use eZ\Publish\API\Repository\Values\User\UserReference as APIUserReference;
 use eZ\Publish\Core\Base\Exceptions\InvalidArgumentException;
 use eZ\Publish\Core\Base\Exceptions\InvalidArgumentType;
 use eZ\Publish\API\Repository\Values\User\Limitation\SiteAccessLimitation as APISiteAccessLimitation;
 use eZ\Publish\API\Repository\Values\User\Limitation as APILimitationValue;
+use eZ\Publish\Core\FieldType\ValidationError;
 use eZ\Publish\Core\MVC\Symfony\SiteAccess;
 use eZ\Publish\SPI\Limitation\Type as SPILimitationTypeInterface;
 
@@ -24,6 +25,29 @@ use eZ\Publish\SPI\Limitation\Type as SPILimitationTypeInterface;
  */
 class SiteAccessLimitationType implements SPILimitationTypeInterface
 {
+    /**
+     * @var array
+     */
+    private $siteAccessList = [];
+
+    public function __construct(array $siteAccessList = [])
+    {
+        foreach ($siteAccessList as $sa) {
+            $this->siteAccessList[$this->generateSiteAccessValue($sa)] = $sa;
+        }
+    }
+
+    /**
+     * Generates the SiteAccess value as CRC32.
+     *
+     * @param string $sa
+     * @return string
+     */
+    private function generateSiteAccessValue($sa)
+    {
+        return sprintf('%u', crc32($sa));
+    }
+
     /**
      * Accepts a Limitation value and checks for structural validity.
      *
@@ -42,8 +66,9 @@ class SiteAccessLimitationType implements SPILimitationTypeInterface
         }
 
         foreach ($limitationValue->limitationValues as $key => $value) {
-            if (!is_string($value)) {
-                throw new InvalidArgumentType("\$limitationValue->limitationValues[{$key}]", 'string', $value);
+            // Value must be a CRC32, so can be either as string or integer.
+            if (!is_string($value) && !is_int($value)) {
+                throw new InvalidArgumentType("\$limitationValue->limitationValues[{$key}]", 'string or integer', $value);
             }
         }
     }
@@ -59,8 +84,20 @@ class SiteAccessLimitationType implements SPILimitationTypeInterface
      */
     public function validate(APILimitationValue $limitationValue)
     {
-        $validationErrors = array();
-        // @todo make sure value exists using config
+        $validationErrors = [];
+        foreach ($limitationValue->limitationValues as $key => $value) {
+            if (!isset($this->siteAccessList[$value])) {
+                $validationErrors[] = new ValidationError(
+                    "\$limitationValue->limitationValues[%key%] => Invalid SiteAccess value \"$value\"",
+                    null,
+                    array(
+                        'value' => $value,
+                        'key' => $key,
+                    )
+                );
+            }
+        }
+
         return $validationErrors;
     }
 
@@ -88,13 +125,13 @@ class SiteAccessLimitationType implements SPILimitationTypeInterface
      *         Example if OwnerLimitationValue->limitationValues[0] is not one of: [ 1,  2 ]
      *
      * @param \eZ\Publish\API\Repository\Values\User\Limitation $value
-     * @param \eZ\Publish\API\Repository\Values\User\User $currentUser
+     * @param \eZ\Publish\API\Repository\Values\User\UserReference $currentUser
      * @param \eZ\Publish\API\Repository\Values\ValueObject $object
      * @param \eZ\Publish\API\Repository\Values\ValueObject[]|null $targets The context of the $object, like Location of Content, if null none where provided by caller
      *
      * @return bool
      */
-    public function evaluate(APILimitationValue $value, APIUser $currentUser, ValueObject $object, array $targets = null)
+    public function evaluate(APILimitationValue $value, APIUserReference $currentUser, ValueObject $object, array $targets = null)
     {
         if (!$value instanceof APISiteAccessLimitation) {
             throw new InvalidArgumentException('$value', 'Must be of type: APISiteAccessLimitation');
@@ -112,7 +149,7 @@ class SiteAccessLimitationType implements SPILimitationTypeInterface
             return false;
         }
 
-        $currentSiteAccessHash = sprintf('%u', crc32($object->name));
+        $currentSiteAccessHash = $this->generateSiteAccessValue($object->name);
 
         return in_array($currentSiteAccessHash, $value->limitationValues);
     }
@@ -121,11 +158,11 @@ class SiteAccessLimitationType implements SPILimitationTypeInterface
      * Returns Criterion for use in find() query.
      *
      * @param \eZ\Publish\API\Repository\Values\User\Limitation $value
-     * @param \eZ\Publish\API\Repository\Values\User\User $currentUser
+     * @param \eZ\Publish\API\Repository\Values\User\UserReference $currentUser
      *
      * @return \eZ\Publish\API\Repository\Values\Content\Query\CriterionInterface
      */
-    public function getCriterion(APILimitationValue $value, APIUser $currentUser)
+    public function getCriterion(APILimitationValue $value, APIUserReference $currentUser)
     {
         throw new \eZ\Publish\API\Repository\Exceptions\NotImplementedException(__METHOD__);
     }

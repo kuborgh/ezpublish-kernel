@@ -120,10 +120,12 @@ class HandlerLocationSortTest extends LanguageAwareTestCase
                             $this->getContentTypeHandler()
                         ),
                     )
-                )
+                ),
+                $this->getLanguageHandler()
             ),
             $this->getMockBuilder('eZ\\Publish\\Core\\Persistence\\Legacy\\Content\\Mapper')->disableOriginalConstructor()->getMock(),
-            $this->getLocationMapperMock()
+            $this->getLocationMapperMock(),
+            $this->getLanguageHandler()
         );
     }
 
@@ -157,7 +159,7 @@ class HandlerLocationSortTest extends LanguageAwareTestCase
                     'ezstring' => new Converter\TextLineConverter(),
                     'ezprice' => new Converter\IntegerConverter(),
                     'ezurl' => new Converter\UrlConverter(),
-                    'ezxmltext' => new Converter\XmlTextConverter(),
+                    'ezrichtext' => new Converter\RichTextConverter(),
                     'ezboolean' => new Converter\CheckboxConverter(),
                     'ezkeyword' => new Converter\KeywordConverter(),
                     'ezauthor' => new Converter\AuthorConverter(),
